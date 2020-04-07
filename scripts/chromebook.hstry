@@ -1,70 +1,12 @@
-    1  nvm
-    2  nvm install 8; nvm install 10; nvm install 12; nvm use 10
-    3  node --version
-    4  pwd
-    5  which nano
-    6  which pico
-    7  which apt
-    8  apt search pico
-    9  apt install nano; apt install git
-   10  sudo apt install nano; sudo apt install git
-   11  which curl
-   12  which node
-   13  which nodejs
-   14  apt search npm
-   15  apt search node
-   16  apt search nodejs
-   17  sudo apt install nodejs
-   18  which nodejs; which node; which npm
-   19  sudo apt remove nodejs
-   20  sudo apt update
-   21  lsb_release -a
-   22  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
-   23  pico 
-   24  ls -la ~
-   25  pico ~/.bashrc
-   26  nvm
-   27  bash
-   28  ll
-   29  mkdir .ssh && chmod 600 .ssh 
-   30  ssh-keygen
-   31  chmod 755 .ssh
-   32  ssh-keygen
-   33  chmod 700 .ssh
-   34  ll .ssh
-   35  cat .ssh/*pub
-   36  history
-   37  git clone git@github.com:chatcher/deployment.git
-   38  ssh git@github.com
-   39  git clone git@github.com:chatcher/deployment.git
-   40  ll
-   41  cd deployment
-   42  ll
-   43  mkdir -p scripts/chromebook
-   44  history > scripts/chromebook.hstry
-   45  rmdir scripts/chromebook
-   46  git status
-   47  git add scripts/chromebook.hstry
-   48  git status
-   49  git commit -S -m 'dump history for chromebook'
-   50  git config --global user.name "hackenslacker@gmail.com"
-   51  git config --global user.email "hackenslacker@gmail.com"
-   52  git config --global user.name "Chad Hatcher"
-   53  git commit -S -m 'dump history for chromebook'
-   54  which gpg
-   55  cat .ssh/*pub
-   56  cat ~/.ssh/*pub
-   57  which gpg2
-   58  apt search gpg2
-   59  apt search gpg
-   60  apt search gpg2
-   61  apt search gpg | grep '^g'
-   62  apt search gpg | grep '2.1.18'
-   63  sudo apt install gnupg
-   64  git status
-   65  gpg --list-secret-keys --keyid-format LONG
-   66  gpg --full-generate-key
-   67  gpg --list-secret-keys --keyid-format LONG
-   68  git config --global user.signingkey 63C4D3D70F1803B1
-   69  ll
-   70  history > scripts/chromebook.hstry
+sudo apt install nano
+sudo apt install git
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
+nvm install 8; nvm install 10; nvm install 12; nvm use 10
+sudo apt update
+mkdir .ssh && chmod 700 .ssh && ssh-keygen
+cat .ssh/*pub
+git config --global user.name "Chad Hatcher"
+git config --global user.email "hackenslacker@gmail.com"
+sudo apt install gnupg
+gpg --full-generate-key
+gpg --list-secret-keys --keyid-format LONG
