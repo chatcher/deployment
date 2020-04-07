@@ -9,6 +9,8 @@ export CS_S="\033[m"
 #export CS_P
 #export CS_A
 
-function color() {
+function colors() {
 echo 'test'
 }
+
+export colors
