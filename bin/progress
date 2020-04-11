@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+left="\033[G\033[K\033[37;44m"
+right="\033[30;100m"
+none="\033[m"
+cols="$(tput cols)"
+half="$(( cols / 2 ))"
+
+numer="${1:-1}"
+denom="${2:-10}"
+
+width="$(( cols * numer / denom ))"
+prcnt="$(( 100 * numer / denom ))%"
+label="${3:-$prcnt}"
+
+#echo "numer: ${numer}"
+#echo "denom: ${denom}"
+#echo "width: ${width}"
+#echo "label: ${label}"
+
+#printf "$b%-$(( width ))s$b$$(( cols - width ))s" "${left}" "" "${right}" ""
+if (( width < half )); then
+	printf "${left}%-$(( width ))s${right}%$(( cols - width ))s${none}" "" "${label} "
+else
+	printf "${left}%-$(( width ))s${right}%$(( cols - width ))s${none}" " ${label}" ""
+fi
