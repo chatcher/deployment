@@ -7,6 +7,7 @@ sudo apt update
 sudo apt install nano
 sudo apt install git
 sudo apt install gnupg
+sudo apt install jq
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
 
 # this might fail because nvm might not be available in the current shell
