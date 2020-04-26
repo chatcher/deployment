@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+arg="${@:-password}"
+
+openssl blake2b512 -binary <<< "${arg}" | base64 -w 0
+
+exit
+
+list="
+blake2b512
+blake2s256
+gost
+sha256
+sha384
+sha512
+"
+
+for encoding in $list; do
+	# result="$(openssl "${encoding}" -binary <<< "${arg}" | xxd -p -c 256 | base64 -w 0)"
+	result="$(openssl "${encoding}" -binary <<< "${arg}" | base64 -w 0)"
+	echo
+	echo "> ${encoding}"
+	echo "${result}"
+	echo "(${#result})"
+done
