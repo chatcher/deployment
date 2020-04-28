@@ -12,8 +12,17 @@ usage() {
 
 if [ -z "${1}" ]; then usage "branch is required"; fi
 
+branch="$(./current-branch.sh)"
+
 if ./has-branch.sh "${1}"; then
-	git checkout "${1}"
+	git checkout "${1}" >&2
 else
-	git checkout -b "${1}"
+	git checkout -b "${1}" >&2
 fi
+
+if [[ "${branch}" =~ / ]]; then
+	git branch -d "${branch}" >&2
+else
+	echo "keeping old [${branch}]" >&2
+fi
+
