@@ -4,6 +4,7 @@ set -x
 
 echo "Installing a bunch of stuff"
 sudo apt update
+sudo apt install nmap
 sudo apt install nano
 sudo apt install git
 sudo apt install gnupg
