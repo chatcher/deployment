@@ -12,7 +12,7 @@ usage() {
 
 if [ -z "${1}" ]; then usage "<branch> required"; fi
 
-git fetch -p
+git fetch -p &>/dev/null
 
 while read -u 3 line; do
 	clean="${line#* }"
