@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 
-arg="${@:-password}"
+usage() {
+	echo "usage:" >&2
+	echo "  $(basename $0) <args...>" >&2
+	echo "generate a stable and 'secure' password based on <args...>" >&2
+
+	if ! [ -z "${1}" ]; then echo "error: ${1}" > &2; fi
+
+	exit 1
+}
+
+arg="${@:-}"
 
 openssl blake2b512 -binary <<< "${arg}" | base64 -w 0
 
@@ -16,10 +26,8 @@ sha512
 "
 
 for encoding in $list; do
-	# result="$(openssl "${encoding}" -binary <<< "${arg}" | xxd -p -c 256 | base64 -w 0)"
 	result="$(openssl "${encoding}" -binary <<< "${arg}" | base64 -w 0)"
 	echo
-	echo "> ${encoding}"
+	echo "  ${encoding} (${#result})"
 	echo "${result}"
-	echo "(${#result})"
 done
