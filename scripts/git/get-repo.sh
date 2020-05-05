@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
 
+usage() {
+	echo "usage:" >&2
+	echo "  $(basename "${0}")" >&2
+
+	if ! [ -z "${1}" ]; then echo "error: ${1}" >&2; fi
+
+	exit 1
+}
+
 while ! [ -d '.git' ] && [ "$(pwd)" != '/' ]; do
 	cd ..
 done
