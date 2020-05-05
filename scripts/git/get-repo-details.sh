@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-. ~/.github
-
 repo="$(./get-repo.sh)"
 
 if [ -z "${repo}" ]; then
@@ -9,5 +7,5 @@ if [ -z "${repo}" ]; then
 	exit 1
 fi
 
-auth_header="Authorization: token ${github_access_token}"
+auth_header="Authorization: token ${GITHUB_TOKEN}"
 curl -H "${auth_header}" "https://api.github.com/repos/${repo}" -s | jq
