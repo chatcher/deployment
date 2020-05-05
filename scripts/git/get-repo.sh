@@ -14,8 +14,7 @@ while ! [ -d '.git' ] && [ "$(pwd)" != '/' ]; do
 done
 
 if ! [ -d '.git' ]; then
-	echo 'No .git directory found in path; better luck next time.' >&2
-	exit 1
+	usage 'No .git directory found in path; better luck next time.'
 fi
 
 url_opt="$(grep git@github .git/config)"
