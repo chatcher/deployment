@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-repo="$(./get-repo.sh)"
+repo="$(get-repo)"
 
 if [ -z "${repo}" ]; then
 	echo 'Failed to discern repo name.' >&2
