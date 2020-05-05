@@ -17,7 +17,19 @@ if ! [ -d '.git' ]; then
 	usage 'No .git directory found in path; better luck next time.'
 fi
 
-url_opt="$(grep git@github .git/config)"
-repo="$(sed -E -e 's/.*://' -e 's/.git$//' <<< "${url_opt}")"
+url_opt="$(grep 'url = ' .git/config | sed -E -e 's/[[:space:]]*url = //')"
 
-echo "${repo}" >&1
+# ssh:
+if [[ "${url_opt}" =~ ^git@github ]]; then
+	# git@github.com:owner/repo
+	repo="$(sed -E -e 's/.*://' <<< "${url_opt}")"
+
+elif [[ "${url_opt}" =~ ^https:// ]]; then
+	# https://github.com/owner/repo
+	repo="$(sed -E -e 's/^https:\/\/[a-zA-Z0-9._-]+\///' <<< "${url_opt}")"
+else
+	usage "Unknown URL format: '${url_opt}'"
+fi
+
+# report user/repo without trailing .git (if present)
+sed -E -e 's/.git$//' <<< "${repo}"
