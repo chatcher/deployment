@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+usage() {
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <title>" >&2
+
+	if ! [ -z "${1}" ]; then echo "error: ${1}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage; fi
+
+if ! has-staged-changes; then usage "Expected staged changes."; fi
+
+# TODO: update base branch before opening PR
+
+bodyfile="$(mktemp)"
+echo "${@}\n" > "${bodyfile}"
+nano "${bodyfile}"
+
+title="$(head -n 1 "${bodyfile}")"
+body="$(tail -n +2 "${bodyfile}" | sed -e '/./,$!d')"
+
+rm "${bodyfile}"
+
+branch="$(generate-branch-name "${title}")"
+base="$(get-base-branch)"
+
+if has-branch "${branch}"; then usage "Branch already exists: '${branch}'"; fi
+
+read -r -d '' data <<JSON
+{
+	"title": "${title}",
+	"base": "${base}",
+	"head": "${branch}",
+	"body": "${body}",
+	"draft": true
+}
+JSON
+
+git checkout -b "${branch}"
+git commit -S -m "${title}"
+git push -u origin "${branch}"
+curl -H "Authorization: bearer ${GITHUB_TOKEN}" -d "${data}" "$(get-repo-api)/repos/$(get-repo-name)/pulls"
