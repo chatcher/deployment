@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+usage() {
+	echo "Generate a (mostly) valid branch name from input prefix and string" >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <prefix> <string>" >&2
+
+	if ! [ -z "${1}" ]; then echo "error: ${1}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage; fi
+
+branch="${@}"
+
+# lowercase
+branch="$(tr 'A-Z' 'a-z' <<< "${branch}")"
+
+# hyphens to underscores
+branch="$(tr '-' '_' <<< "${branch}")"
+
+# punctuation and symbols to hyphens
+branch="$(sed -E -e 's/\W+/-/g' -e 's/(^-|-$)//g' <<< "${branch}")"
+
+# done
+echo "${branch}" >&1
