@@ -10,18 +10,18 @@ usage() {
 	exit 1
 }
 
-if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage; fi
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-branch="${@}"
+branch="${*}"
 
 # lowercase
-branch="$(tr 'A-Z' 'a-z' <<< "${branch}")"
+branch="$(tr '[:upper:]' '[:lower:]' <<< "${branch}")"
 
 # hyphens to underscores
 branch="$(tr '-' '_' <<< "${branch}")"
 
 # punctuation and symbols to hyphens
-branch="$(sed -E -e 's/\W+/-/g' -e 's/(^-|-$)//g' <<< "${branch}")"
+branch="$(sed -E -e 's/[^a-z0-9_-]+/-/g' -e 's/(^-|-$)//g' <<< "${branch}")"
 
 # done
 echo "${branch}" >&1
