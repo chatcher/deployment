@@ -9,14 +9,14 @@ usage() {
 	exit 1
 }
 
-if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage; fi
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
 if ! has-staged-changes; then usage "Expected staged changes."; fi
 
 # TODO: update base branch before opening PR
 
 bodyfile="$(mktemp)"
-printf "%s\n\n" "${?}" > "${bodyfile}"
+printf "%s\n\n" "${*}" > "${bodyfile}"
 nano "${bodyfile}"
 
 title="$(head -n 1 "${bodyfile}")"
@@ -24,8 +24,14 @@ body="$(tail -n +2 "${bodyfile}" | sed -e '/./,$!d')"
 
 rm "${bodyfile}"
 
+message="$(generate-commit-message "${title}")"
 branch="$(generate-branch-name "${title}")"
 base="$(get-base-branch)"
+
+if [ -z "${title}" ]; then usage "Pull Request title is required."; fi
+if [ -z "${message}" ]; then usage "Could not derive commit message."; fi
+if [ -z "${branch}" ]; then usage "Could not derive branch name."; fi
+if [ -z "${base}" ]; then usage "Could not determine base branch."; fi
 
 if has-branch "${branch}"; then usage "Branch already exists: '${branch}'"; fi
 
@@ -40,6 +46,6 @@ read -r -d '' data <<JSON
 JSON
 
 git checkout -b "${branch}"
-git commit -S -m "${title}"
+git commit -S -m "${message}"
 git push -u origin "${branch}"
 curl -H "Authorization: bearer ${GITHUB_TOKEN}" -d "${data}" "$(get-repo-api)/repos/$(get-repo-name)/pulls"
