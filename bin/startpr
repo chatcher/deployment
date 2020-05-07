@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 
 usage() {
+	echo "Create a draft Pull Request from the staged changes." >&2
+	echo >&2
 	echo "usage:" >&2
-	echo "  $(basename "${0}") <title>" >&2
+	echo "  $(basename "${0}") [-o] <title>" >&2
+	echo >&2
 
 	if [ -n "${1}" ]; then echo "error: ${1}" >&2; fi
 
@@ -48,7 +51,7 @@ JSON
 git checkout -b "${branch}"
 git commit -S -m "${message}"
 git push -u origin "${branch}"
-response="$(curl -H "Authorization: bearer ${GITHUB_TOKEN}" -d "${data}" "$(get-repo-api)/repos/$(get-repo-name)/pulls" -s)"
+response="$(curl -H "Authorization: bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.shadow-cat-preview+json" -d "${data}" "$(get-repo-api)/repos/$(get-repo-name)/pulls" -s)"
 
 prn="$(jq '.number' <<< "${response}")"
 user="$(jq -r '.user.login' <<< "${response}")"
