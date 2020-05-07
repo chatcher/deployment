@@ -2,10 +2,10 @@
 
 usage() {
 	echo "usage:" >&2
-	echo "  $(basename $0) <args...>" >&2
+	echo "  $(basename "${0}") <args...>" >&2
 	echo "generate a stable and 'secure' password based on <args...>" >&2
 
-	if ! [ -z "${1}" ]; then echo "error: ${1}" > &2; fi
+	if [ -n "${1}" ]; then echo "error: ${1}" > &2; fi
 
 	exit 1
 }

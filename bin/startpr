@@ -4,7 +4,7 @@ usage() {
 	echo "usage:" >&2
 	echo "  $(basename "${0}") <title>" >&2
 
-	if ! [ -z "${1}" ]; then echo "error: ${1}" >&2; fi
+	if [ -n "${1}" ]; then echo "error: ${1}" >&2; fi
 
 	exit 1
 }
@@ -16,7 +16,7 @@ if ! has-staged-changes; then usage "Expected staged changes."; fi
 # TODO: update base branch before opening PR
 
 bodyfile="$(mktemp)"
-echo "${@}\n" > "${bodyfile}"
+printf "%s\n\n" "${?}" > "${bodyfile}"
 nano "${bodyfile}"
 
 title="$(head -n 1 "${bodyfile}")"
