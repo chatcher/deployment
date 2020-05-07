@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+usage() {
+	echo "usage:" >&2
+	echo "  $(basename "${0}") [-n] <prompt>" >&2
+	echo >&2
+	echo "options:" >&2
+	echo "  -n    default response will be 'n'" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo "error: ${1}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+default='y'
+options="Y/n"
+
+if [ "${1}" == '-n' ]; then
+	default='n'
+	options='y/N'
+	shift
+fi
+
+read -p "${*} [${options}] > " -r response
+
+if [[ "${response:-$default}" =~ [Yy] ]]; then exit 0; fi
+if [[ "${response:-$default}" =~ [Nn] ]]; then exit 1; fi
+
+usage "Invalid response: '${response}'"
