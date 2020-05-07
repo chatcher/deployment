@@ -21,7 +21,7 @@ branch="$(tr '[:upper:]' '[:lower:]' <<< "${branch}")"
 branch="$(tr '-' '_' <<< "${branch}")"
 
 # punctuation and symbols to hyphens
-branch="$(sed -E -e 's/[^a-z0-9_-]+/-/g' -e 's/(^-|-$)//g' <<< "${branch}")"
+branch="$(sed -E -e 's/[^a-z0-9_]+/-/g' -e 's/(^-|-$)//g' <<< "${branch}")"
 
 # done
 echo "${branch}" >&1
