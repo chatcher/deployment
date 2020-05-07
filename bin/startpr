@@ -48,4 +48,19 @@ JSON
 git checkout -b "${branch}"
 git commit -S -m "${message}"
 git push -u origin "${branch}"
-curl -H "Authorization: bearer ${GITHUB_TOKEN}" -d "${data}" "$(get-repo-api)/repos/$(get-repo-name)/pulls"
+response="$(curl -H "Authorization: bearer ${GITHUB_TOKEN}" -d "${data}" "$(get-repo-api)/repos/$(get-repo-name)/pulls" -s)"
+
+prn="$(jq '.number' <<< "${response}")"
+user="$(jq -r '.user.login' <<< "${response}")"
+
+open "$(get-pull-request-link "${prn}")"
+
+read -r -d '' data << JSON
+{
+	"assignees": [
+		"${user}"
+	]
+}
+JSON
+
+curl -H "Authorization: bearer ${GITHUB_TOKEN}" -d "${data}" "$(get-repo-api)/repos/$(get-repo-name)/issues/${prn}/assignees"
