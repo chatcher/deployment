@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+usage() {
+	echo "Construct the URL for the (optionally) specified Pull Request" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") [<Pull Request Number>]" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo "error: ${1}" >&2; fi
+
+	exit 1
+}
+
+while ! [ -d '.git' ] && [ "$(pwd)" != '/' ]; do
+	cd ..
+done
+
+if ! [ -d '.git' ]; then
+	usage 'No .git directory found in path; better luck next time.'
+fi
+
+url_opt="$(grep 'url = ' .git/config | sed -E -e 's/[[:space:]]*url = //')"
+
+domain="$(sed -E -e 's/^(git@|https:\/\/)([a-zA-Z0-9._-]+)(\/.*|:.*)/\2/' <<< "${url_opt}")"
+
+if [ -z "${1}" ]; then
+	echo "https://${domain}/$(get-repo-name)/pulls" >&1
+	
+else
+	echo "https://${domain}/$(get-repo-name)/pull/${1}" >&1
+fi
