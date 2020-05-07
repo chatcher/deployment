@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 usage() {
-	echo "Generate a (mostly) valid branch name from input prefix and string" >&2
+	echo "Generate a (mostly) valid branch name from input string" >&2
 	echo "usage:" >&2
-	echo "  $(basename "${0}") <prefix> <string>" >&2
+	echo "  $(basename "${0}") <string...>" >&2
 
 	if [ -n "${1}" ]; then echo "error: ${1}" >&2; fi
 
