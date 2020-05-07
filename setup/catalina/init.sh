@@ -9,6 +9,7 @@ open 'https://sequelpro.com/download#auto-start'
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
 
 brew install nvm
+brew install shellcheck
 
 brew cask install homebrew/cask-versions/adoptopenjdk8
 
