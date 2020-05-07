@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+usage() {
+	echo "Generate a (mostly) valid commit message message from input string" >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <string...>" >&2
+
+	if [ -n "${1}" ]; then echo "error: ${1}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+message="${*}"
+
+# lowercase
+message="$(tr '[:upper:]' '[:lower:]' <<< "${message}")"
+
+# remove trailing punctuation
+message="$(sed -E -e 's/\.+$//g' <<< "${message}")"
+
+# done
+echo "${message}" >&1
