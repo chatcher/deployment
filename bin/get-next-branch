@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+usage() {
+	echo "Examine current branch and try to determine the next branch name" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}")" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo "error: ${1}" >&2; fi
+
+	exit 1
+}
+
+branch="$(get-current-branch)"
+
+if [[ "${branch}" =~ -[0-9]{1,3}$ ]]; then
+	prefix="$(sed -E -e 's/^(.+)-[0-9]+$/\1/' <<< "${branch}")"
+	suffix="$(sed -E -e 's/^.+-([0-9]+)$/\1/' <<< "${branch}")"
+	if (( suffix > 1 && suffix < 1000 )); then
+		suffix="$(( suffix + 1 ))"
+		echo "${prefix}-${suffix}" >&2
+	else
+		usage "Couldn't get an appropriate suffix off of '${branch}'"
+	fi
+else
+	usage "Dunno how to handle '${branch}'"
+fi
