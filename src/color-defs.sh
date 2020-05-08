@@ -29,7 +29,7 @@ function colors() {
 	echo
 	echo -e "\tColors"
 	echo
-	echo '  Format: \033[<n>m'
+	echo '  Format: \\e[<n>m'
 	writecolor 1 '1 - bold'; echo
 	writecolor 2 '2 - dim'; echo
 	writecolor 3 '3 - italic'; echo
@@ -41,7 +41,7 @@ function colors() {
 	writecolor 9 '9 - strike'; echo
 
 	echo
-	echo '  Format: \033[<n>m'
+	echo '  Format: \\e[<n>m'
 	for index in {30..37}; do
 		writecolor "${index}"
 	done
@@ -63,7 +63,7 @@ function colors() {
 	echo
 
 	echo
-	echo '  Format: \033[38;5;<x+y>m'
+	echo '  Format: \\e[38;5;<x+y>m'
 	echo -n '   '
 	for odd in {1..9..2}; do
 		echo -n "   ${odd}"
@@ -96,12 +96,27 @@ function colors() {
 		done
 		echo
 	done
+
+	echo -n "   "
 	for grey in {232..243}; do
-		writecolor "48;5;${grey}" "${grey}"; echo -n ' '
+		writecolor "48;5;${grey}" " ${grey} "
 	done
 	echo
+	echo -n "   "
+	for grey in {232..243}; do
+		writecolor "48;5;${grey}" "     "
+	done
+	echo
+
+	echo -n "   "
 	for grey in {244..255}; do
-		writecolor "30;48;5;${grey}" "${grey}"; echo -n ' '
+		writecolor "30;48;5;${grey}" " ${grey} "
+	done
+	echo
+
+	echo -n "   "
+	for grey in {244..255}; do
+		writecolor "30;48;5;${grey}" "     "
 	done
 	echo
 }
