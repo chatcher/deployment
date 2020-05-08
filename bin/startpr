@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-set +e
-set +x
+set -e
+set -x
 
 usage() {
 	echo "Create a draft Pull Request from the staged changes." >&2
