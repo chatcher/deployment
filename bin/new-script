@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+set -e
+set -x
+
+usage() {
+	echo "Create a new script with the specified name." >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <script name>" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo "error: ${1}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+name="${1}"
+
+if [ -z "${name}" ]; then
+	read -p 'Name your new script: ' -r name
+fi
+
+if [ -z "${name}" ]; then
+	usage "Well I don't know what you want."
+fi
+
+cd "${HOME}/deployment/bin" || usage "Uh... wtf did you do?"
+
+touch "${name}"
+chmod +x "${name}"
+open -a 'Sublime Text' "${name}"
+
+cat <<'BODY' > "${name}"
+#!/usr/bin/env bash
+
+set -e
+set -x
+
+usage() {
+	echo "Description" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <arguments>" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo "error: ${1}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+# code goes here ...
+BODY
