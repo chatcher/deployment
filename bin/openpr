@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+
+set +e
+set +x
+
+usage() {
+	echo "Create a draft Pull Request from the current branch." >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <title>" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo "error: ${1}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+if has-staged-changes; then usage "Did not expect staged changes."; fi
+
+bodyfile="$(mktemp)"
+printf "%s\n\n" "${*}" > "${bodyfile}"
+if [ -f 'PULL_REQUEST_TEMPLATE.md' ]; then cat 'PULL_REQUEST_TEMPLATE.md' >> "${bodyfile}"; fi
+nano "${bodyfile}"
+
+title="$(head -n 1 "${bodyfile}")"
+body="$(tail -n +2 "${bodyfile}" | sed -e '/./,$!d' | tr '\n' 'Ω' | sed -e 's/Ω/\\r\\n/g')"
+
+rm "${bodyfile}"
+
+message="$(generate-commit-message "${title}")"
+branch="$(get-current-branch)"
+base="$(get-base-branch)"
+
+if [ -z "${title}" ]; then usage "Pull Request title is required."; fi
+if [ -z "${message}" ]; then usage "Could not derive commit message."; fi
+if [ -z "${branch}" ]; then usage "Could not derive branch name."; fi
+if [ -z "${base}" ]; then usage "Could not determine base branch."; fi
+
+read -r -d '' data <<JSON
+{
+	"title": "${title}",
+	"base": "${base}",
+	"head": "${branch}",
+	"body": "${body}",
+	"draft": true
+}
+JSON
+
+echo "${data}" > "$(md5 <<< "${branch}").json"
+echo "${data}" >&2
+
+if ! prompt 'Look good?'; then exit 1; fi
+
+git push -u origin "${branch}"
+response="$(curl -H "Authorization: bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.shadow-cat-preview+json" -d "${data}" "$(get-repo-api)/repos/$(get-repo-name)/pulls" -s)"
+
+prn="$(jq '.number' <<< "${response}")"
+user="$(jq -r '.user.login' <<< "${response}")"
+
+if [ -z "${prn}" ] || [ "${prn}" == 'null' ]; then
+	echo "${response}" >&2
+	echo "Something bad happened." >&2
+	exit 1
+fi
+
+open "$(get-pull-request-link "${prn}")"
+
+read -r -d '' data << JSON
+{
+	"assignees": [
+		"${user}"
+	]
+}
+JSON
+
+curl -H "Authorization: bearer ${GITHUB_TOKEN}" -d "${data}" "$(get-repo-api)/repos/$(get-repo-name)/issues/${prn}/assignees"
