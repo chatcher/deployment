@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+set -e
+set -x
+
+usage() {
+	echo "Show details for all Pull Requests." >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}")" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo "error: ${1}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+while read -u 3 -r line;do
+	echo "${line}"
+done 3<<< "$(get-pull-requests)"
