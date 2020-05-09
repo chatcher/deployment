@@ -17,7 +17,7 @@ usage() {
 
 initial="$(get-current-branch)"
 
-branch="${1:-dev}"
+branch="${1:-$(get-repo-base-branch)}"
 
 if [ -z "${initial}" ]; then
 	usage "Couldn't figure out initial branch."
@@ -34,7 +34,7 @@ if [ -z "${branch}" ]; then usage "Branch or Pull Request Number required."; fi
 if has-local-branch "${branch}"; then
 	echo "Checking out local branch..." >&2
 	git checkout "${branch}"
-	
+
 elif has-remote-branch  "${branch}"; then
 	echo "Checking out remote branch..." >&2
 	git checkout "${branch}"

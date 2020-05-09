@@ -45,7 +45,7 @@ rm "${bodyfile}"
 
 message="$(generate-commit-message "${title}")"
 branch="${branch:-$(generate-branch-name "${title}")}"
-base="$(get-base-branch)"
+base="$(get-repo-base-branch)"
 
 if [ -z "${title}" ]; then usage "Pull Request title is required."; fi
 if [ -z "${message}" ]; then usage "Could not derive commit message."; fi
