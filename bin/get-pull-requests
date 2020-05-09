@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -x
+
+GITHUB_AUTH_HEADER="Authorization: bearer ${GITHUB_TOKEN}"
+
+response="$(curl -H "${GITHUB_AUTH_HEADER}" "$(get-repo-api)/repos/$(get-repo-name)/pulls" -s)"
+
+jq '[.[] | {number:.number,state:.state,title:.title,user:.user.login,body:.body,head:.head.ref,base:.base.ref,link:._links.html.href}]' <<< "${response}"
