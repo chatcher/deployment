@@ -39,7 +39,7 @@ if [ -f 'PULL_REQUEST_TEMPLATE.md' ]; then cat 'PULL_REQUEST_TEMPLATE.md' >> "${
 nano "${bodyfile}"
 
 title="$(head -n 1 "${bodyfile}")"
-body="$(tail -n +2 "${bodyfile}" | sed -e '/./,$!d' | tr '\n' 'Ω' | sed -e 's/Ω/\\r\\n/g')"
+body="$(tail -n +2 "${bodyfile}" | sed -e '/./,$!d')"
 
 rm "${bodyfile}"
 
@@ -55,12 +55,12 @@ if [ -z "${base}" ]; then usage "Could not determine base branch."; fi
 # TODO: try to recovery from this:
 if has-branch "${branch}"; then usage "Branch already exists: '${branch}'"; fi
 
-read -r -d '' data <<JSON
+read -r -d '' data <<JSON || :
 {
 	"title": "${title}",
 	"base": "${base}",
 	"head": "${branch}",
-	"body": "${body}",
+	"body": "${body//$'\n'/\\r\\n}",
 	"draft": true
 }
 JSON
