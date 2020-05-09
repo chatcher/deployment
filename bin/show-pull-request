@@ -1,0 +1,42 @@
+#!/bin/bash
+
+set -e
+
+usage() {
+	echo "Fetch and show details for the specified Pull Request" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <Pull Request Number>" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo "error: ${1}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+prn="${1}"
+
+if [ -z "${prn}" ]; then read -p 'Pull Request Number: ' -r prn; fi
+if [ -z "${prn}" ]; then usage 'Okay, nevermind.'; fi
+
+details="$(get-pull-request "${@}")"
+
+pr_number="$(jq -r '.number' <<< "${details}")"
+pr_state="$(jq -r '.state' <<< "${details}")"
+pr_title="$(jq -r '.title' <<< "${details}")"
+pr_user="$(jq -r '.user' <<< "${details}")"
+pr_body="$(jq -r '.body' <<< "${details}" | sed -e 's/\\r\\n/Ω/g' | tr 'Ω' '\n')"
+pr_head="$(jq -r '.head' <<< "${details}")"
+pr_base="$(jq -r '.base' <<< "${details}")"
+pr_link="$(jq -r '.link' <<< "${details}")"
+
+state_color="${E_CS}"
+if [ "${pr_state}" == 'open' ]; then state_color="${S_CS}"; fi
+
+echo -e "${I_CS}Showing${N_CS}: #${pr_number} (${state_color}${pr_state}${N_CS}) ${L_CS}${pr_link}${N_CS}"
+echo -e "${I_CS}user${N_CS}: ${pr_user}"
+echo -e "${I_CS}branch${N_CS}: ${pr_base} <- ${pr_head}"
+echo -e "${I_CS}title${N_CS}: ${pr_title}"
+[ -n "${pr_body}" ] && echo -e "${pr_body}"
