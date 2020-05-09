@@ -14,7 +14,7 @@ if [ -z "${1}" ]; then usage "<branch> required"; fi
 
 git fetch -p &>/dev/null
 
-while read -u 3 line; do
+while read -u 3 -r line; do
 	clean="${line#* }"
 	branch="${clean#origin/}"
 	if [ "${branch}" == "${1}" ]; then
