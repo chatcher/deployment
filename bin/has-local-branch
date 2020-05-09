@@ -18,6 +18,6 @@ while read -u 3 -r line; do
 	if [ "${branch}" == "${1}" ]; then
 		exit
 	fi
-done 3<<<"$(git branch)"
+done 3<<< "$(git branch)"
 
 exit 1
