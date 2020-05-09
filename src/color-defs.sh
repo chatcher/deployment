@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 
-export CS_N="\033[0m"  # normal  - white
-export CS_S="\033[32m" # status  - green
-export CS_E="\033[31m" # error   - red
-export CS_W="\033[33m" # warning - orange
+export N_CS="\033[0m"  # normal  - white
+export S_CS="\033[32m" # status  - green
+export E_CS="\033[31m" # error   - red
+export W_CS="\033[33m" # warning - orange
 
-export CS_I="\033[34m"   # info   - blue
-export CS_D="\033[35m"   # debug  - purple
-export CS_P="\033[36m"   # prompt - cyan
-export CS_A="\033[31m\a" # alert  - red with bell
-export CS_T="\033[90m"   # trace  - grey
+export I_CS="\033[94m"   # info   - blue
+export D_CS="\033[35m"   # debug  - purple
+export P_CS="\033[36m"   # prompt - cyan
+export A_CS="\033[31m\a" # alert  - red with bell
+export T_CS="\033[90m"   # trace  - grey
+export L_CS="\033[36;4m"   # link   - cyan, underline
 
 function writecolor() {
 	color="$1"
