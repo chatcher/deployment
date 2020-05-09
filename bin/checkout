@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 
+set -e
+set -x
+
 usage() {
-	echo "Checkout the specified branch and delete the old branch locally" >&2
+	echo "Checkout the specified Branch or Pull Request" >&2
 	echo >&2
 	echo "usage:" >&2
-	echo "  $(basename "${0}") <new branch>" >&2
+	echo "  $(basename "${0}") <branch|prn>" >&2
 	echo >&2
 
 	if [ -n "${1}" ]; then echo "error: ${1}" >&2; fi
@@ -12,40 +15,34 @@ usage() {
 	exit 1
 }
 
-current="$(get-current-branch)"
+initial="$(get-current-branch)"
 
-branch="${1:-$(get-next-branch)}"
+branch="${1:-dev}"
 
-if [ -z "${current}" ]; then
-	usage "Couldn't figure out current branch."
-elif [ -z "${branch}" ]; then
-	usage "Couldn't figure out next branch."
+if [ -z "${initial}" ]; then
+	usage "Couldn't figure out initial branch."
 fi
 
+if [[ "${branch}" =~ ^[0-9]+$ ]]; then
+	pr_branch="$(get-pull-request "${branch}" | jq -r '.head' )"
+	if [ -z "${pr_branch}" ]; then usage "Couldn't find a branch for PR #${branch}."; fi
+	branch="${pr_branch}"	
+fi
+
+if [ -z "${branch}" ]; then usage "Branch or Pull Request Number required."; fi
+
 if has-local-branch "${branch}"; then
-	echo "Checking out local branch" >&2
+	echo "Checking out local branch..." >&2
 	git checkout "${branch}"
+	
 elif has-remote-branch  "${branch}"; then
-	echo "Checking out remote branch" >&2
+	echo "Checking out remote branch..." >&2
 	git checkout "${branch}"
+
 else
-	echo "Creating new branch" >&2
+	echo "Creating new branch..." >&2
 	git checkout -bt "${branch}"
 fi
 
-# 662  git reset HEAD~
-# 664  git add .
-# 667  git branch -d pull-duplicate-code-into-local-const
-# 668  startpr Provide 'TH' as second param in upload.service.spec
-# 669  git fetch; git status
-# 670  git checkout dev && git branch -d provide-th-as-second-param-in-upload-service-spec && git status
-# 671  git branch -a
-# 672  git branch -d HPMS-18918-1
-# 673  git fetch -p
-# 675  git checkout HPMS-23619-12
-# 676  git branch HPMS-23619-12
-# 678  git fetch && git checkout HPMS-23619-12 && git checkout -b HPMS-23619-13
-# 679  git status
-# 680  git push origin -u HPMS-23619-13
-# 681  git branch -a | grep 236
-# 682  git branch -d HPMS-23619-12
+git pull
+git branch -d "${initial}"
