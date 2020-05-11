@@ -1,9 +1,27 @@
 #!/bin/bash
 
-set -x
+set -e
+
+usage() {
+	echo "Fetch the list of Pull Requests for the current repo." >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}")" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo "error: ${1}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
 GITHUB_AUTH_HEADER="Authorization: bearer ${GITHUB_TOKEN}"
 
 response="$(curl -H "${GITHUB_AUTH_HEADER}" "$(get-repo-api)/repos/$(get-repo-name)/pulls" -s)"
+
+message="$(jq .message <<< "${response}")"
+
+if [ -n "${message}" ]; then usage "${message}"; fi
 
 jq '[.[] | {number:.number,state:.state,title:.title,user:.user.login,body:.body,head:.head.ref,base:.base.ref,link:._links.html.href}]' <<< "${response}"
