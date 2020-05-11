@@ -20,8 +20,8 @@ GITHUB_AUTH_HEADER="Authorization: bearer ${GITHUB_TOKEN}"
 
 response="$(curl -H "${GITHUB_AUTH_HEADER}" "$(get-repo-api)/repos/$(get-repo-name)/pulls" -s)"
 
-message="$(jq .message <<< "${response}")"
+message="$(jq -r '.message' <<< "${response}" 2>/dev/null || :)"
 
 if [ -n "${message}" ]; then usage "${message}"; fi
 
-jq '[.[] | {number:.number,state:.state,title:.title,user:.user.login,body:.body,head:.head.ref,base:.base.ref,link:._links.html.href}]' <<< "${response}"
+jq -c '.[] | {number:.number,state:.state,head:.head.ref,base:.base.ref,link:._links.html.href,title:.title,user:.user.login,body:.body}' <<< "${response}"
