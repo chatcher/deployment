@@ -41,7 +41,8 @@ elif has-remote-branch  "${branch}"; then
 
 else
 	echo "Creating new branch..." >&2
-	git checkout -bt "${branch}"
+	git checkout -b "${branch}"
+	git push -u origin "${branch}"
 fi
 
 git pull
