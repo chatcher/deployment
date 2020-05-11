@@ -55,7 +55,7 @@ if [ -z "${base}" ]; then usage "Could not determine base branch."; fi
 # TODO: try to recovery from this:
 if has-branch "${branch}"; then usage "Branch already exists: '${branch}'"; fi
 
-read -r -d '' data <<JSON
+read -d '' -r data <<JSON || :
 {
 	"title": "${title}",
 	"base": "${base}",
@@ -85,7 +85,7 @@ fi
 
 open "$(get-pull-request-link "${prn}")"
 
-read -r -d '' data << JSON
+read -r -d '' data << JSON || :
 {
 	"assignees": [
 		"${user}"
