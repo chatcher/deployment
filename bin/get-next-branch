@@ -19,7 +19,7 @@ if [[ "${branch}" =~ -[0-9]{1,3}$ ]]; then
 	suffix="$(sed -E -e 's/^.+-([0-9]+)$/\1/' <<< "${branch}")"
 	if (( suffix > 1 && suffix < 1000 )); then
 		suffix="$(( suffix + 1 ))"
-		echo "${prefix}-${suffix}" >&2
+		echo "${prefix}-${suffix}" >&1
 	else
 		usage "Couldn't get an appropriate suffix off of '${branch}'"
 	fi
