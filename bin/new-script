@@ -31,7 +31,7 @@ cd "${HOME}/deployment/bin" || usage "Uh... wtf did you do?"
 
 touch "${name}"
 chmod +x "${name}"
-open -a 'Sublime Text' "${name}"
+which open >/dev/null && open -a 'Sublime Text' "${name}"
 
 cat <<'BODY' > "${name}"
 #!/usr/bin/env bash
@@ -55,3 +55,5 @@ if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
 # code goes here ...
 BODY
+
+which open >/dev/null || pico "${name}"
