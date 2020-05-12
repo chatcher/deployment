@@ -38,7 +38,7 @@ if [ -z "${message}" ]; then usage "Could not derive commit message."; fi
 if [ -z "${branch}" ]; then usage "Could not derive branch name."; fi
 if [ -z "${base}" ]; then usage "Could not determine base branch."; fi
 
-read -r -d '' data <<JSON
+read -d '' -r data <<JSON || :
 {
 	"title": "${title}",
 	"base": "${base}",
@@ -67,7 +67,7 @@ fi
 
 open "$(get-pull-request-link "${prn}")"
 
-read -r -d '' data << JSON
+read -d '' -r data << JSON || :
 {
 	"assignees": [
 		"${user}"
