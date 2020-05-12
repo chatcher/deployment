@@ -30,7 +30,6 @@ fi
 list="$(get-pull-request-list)"
 
 while read -u 3 -r details; do
-
 	pr_number="$(jq -r '.number' <<< "${details}")"
 	pr_state="$(jq -r '.state' <<< "${details}")"
 	pr_title="$(jq -r '.title' <<< "${details}")"
@@ -44,10 +43,10 @@ while read -u 3 -r details; do
 	if [ "${pr_state}" == 'open' ]; then state_color="${S_CS}"; fi
 
 	echo
-	echo -e "${I_CS}#${pr_number} (${state_color}${pr_state}${N_CS}) ${L_CS}${pr_link}${N_CS}"
-	echo -e "${I_CS}user${N_CS}: ${pr_user}"
-	echo -e "${I_CS}branch${N_CS}: ${pr_base} <- ${pr_head}"
+	echo -e "${K_CS}[${I_CS}${pr_user}${K_CS}] ${D_CS}#${pr_number} ${K_CS}(${state_color}${pr_state}${K_CS}) ${L_CS}${pr_link}${N_CS}"
 	echo -e "${I_CS}title${N_CS}: ${pr_title}"
-	[ "${show_body}" = true ] && [ -n "${pr_body}" ] && echo -e "${pr_body}" || :
-
+	echo -e "${I_CS}branch${N_CS}: ${pr_base} <- ${W_CS}${pr_head}${N_CS}"
+	if [ "${show_body}" = true ] && [ -n "${pr_body}" ]; then
+		echo -e "${pr_body}"
+	fi
 done 3<<< "${list}"
