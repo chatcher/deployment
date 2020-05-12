@@ -9,8 +9,22 @@ export I_CS="\033[94m"   # info   - blue
 export D_CS="\033[35m"   # debug  - purple
 export P_CS="\033[36m"   # prompt - cyan
 export A_CS="\033[31m\a" # alert  - red with bell
-export T_CS="\033[90m"   # trace  - grey
+export K_CS="\033[90m"   # trace  - grey
 export L_CS="\033[36;4m"   # link   - cyan, underline
+
+function color_vars() {
+	echo -e "\${N_CS} : ${N_CS}normal${N_CS}  - white"
+	echo -e "\${S_CS} : ${S_CS}status${N_CS}  - green"
+	echo -e "\${E_CS} : ${E_CS}error${N_CS}   - red"
+	echo -e "\${W_CS} : ${W_CS}warning${N_CS} - orange"
+
+	echo -e "\${A_CS} : ${E_CS}alert${N_CS}   - red with bell"
+	echo -e "\${I_CS} : ${I_CS}info${N_CS}    - blue"
+	echo -e "\${D_CS} : ${D_CS}debug${N_CS}   - purple"
+	echo -e "\${K_CS} : ${K_CS}dark${N_CS}    - grey"
+	echo -e "\${P_CS} : ${P_CS}prompt${N_CS}  - cyan"
+	echo -e "\${L_CS} : ${L_CS}link${N_CS}    - cyan, underline"
+}
 
 function writecolor() {
 	color="$1"
@@ -29,6 +43,7 @@ function writecolorbox() {
 function colors() {
 	echo
 	echo -e "\tColors"
+	color_vars
 	echo
 	echo '  Format: \\e[<n>m'
 	writecolor 1 '1 - bold'; echo
