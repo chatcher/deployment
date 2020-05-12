@@ -48,7 +48,7 @@ read -d '' -r data <<JSON || :
 }
 JSON
 
-echo "${data}" > "$(md5 <<< "${branch}").json"
+# echo "${data}" > "$(md5 <<< "${branch}").json"
 echo "${data}" >&2
 
 if ! prompt 'Look good?'; then exit 1; fi
