@@ -24,4 +24,4 @@ message="$(jq -r '.message' <<< "${response}" 2>/dev/null || :)"
 
 if [ -n "${message}" ]; then usage "${message}"; fi
 
-jq -c '.[] | {number:.number,state:.state,head:.head.ref,base:.base.ref,link:._links.html.href,title:.title,user:.user.login,body:.body}' <<< "${response}"
+jq -c '.[] | {number:.number,open:.state,state:.mergeable_state,head:.head.ref,base:.base.ref,link:._links.html.href,title:.title,user:.user.login,body:.body}' <<< "${response}"
