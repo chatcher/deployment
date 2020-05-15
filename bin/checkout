@@ -12,7 +12,11 @@ delete_branch_like_a_jerk() {
 
 delete_branch() {
 	branch="${1}"
-	git branch -d "${branch}"
+	if [[ "${branch}" =~ ^te?mp ]]; then
+		git branch -D "${branch}"
+	else
+		git branch -d "${branch}" || delete_branch_like_a_jerk "${branch}"
+	fi
 }
 
 usage() {
@@ -29,7 +33,6 @@ usage() {
 
 initial="$(get-current-branch)"
 branch="${1:-$(get-repo-base-branch)}"
-push_or_pull="pull"
 
 if [ -z "${initial}" ]; then
 	usage "Couldn't figure out initial branch."
@@ -54,22 +57,21 @@ elif has-remote-branch  "${branch}"; then
 	echo -e "${S_CS} Checking out remote branch... ${N_CS}" >&2
 	git checkout "${branch}"
 
+elif [[ "${branch}" =~ ^te?mp ]]; then
+	echo -e "${I_CS} I noticed you checked out a temp branch. Good for you. ${N_CS}" >&2
+	git checkout -b "${branch}"
+
 elif prompt "Create ${branch}"; then
 	echo -e "${S_CS} Creating new branch... ${N_CS}" >&2
 	git checkout -b "${branch}"
-	if [[ "${branch}" =~ ^te?mp ]]; then
-		echo -e "${I_CS} I noticed you checked out a temp branch. Good for you. ${N_CS}" >&2
-	else
-		push_or_pull='push'
-	fi
+	git push -u origin "${branch}"
 
 else
 	usage 'Well, nevermind then.'
 fi
 
-if [ "${push_or_pull}" == 'push' ]; then
-	git push -u origin "${branch}"
-elif [ "${push_or_pull}" == 'pull' ]; then
+if has-remote-branch  "${branch}"; then
+	echo -e "${S_CS} Updating branch... ${N_CS}" >&2
 	git pull
 fi
 
