@@ -24,7 +24,9 @@ if [ "${1}" == '-n' ]; then
 	shift
 fi
 
-read -p "${*} [${options}] > " -r response
+echo >&2
+echo -e "${P_CS}${*}${N_CS}" >&2
+read -p "[${options}] " -r response
 
 if [[ "${response:-$default}" =~ [Yy] ]]; then exit 0; fi
 if [[ "${response:-$default}" =~ [Nn] ]]; then exit 1; fi
