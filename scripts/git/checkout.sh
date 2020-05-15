@@ -5,7 +5,7 @@ usage() {
 	echo "usage:" >&2
 	echo "  $(basename "${0}") <branch>" >&2
 
-	if [ -n "${1}" ]; then echo "error: ${1}" >&2; fi
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
 
 	exit 1
 }
