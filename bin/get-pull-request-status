@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+set -e
+
+usage() {
+	echo "Fetch list of comment for specified Pull Request" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <prn>" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+temp_dir="$(mktemp -d)"
+trap 'rm -r "${temp_dir}"' EXIT
+
+list="$(get-pull-request-reviews "${@}")"
+users=()
+
+while read -u 3 -r review; do
+	user="$(jq -r '.user' <<< "${review}")"
+	state="$(jq -r '.state' <<< "${review}")"
+
+	users+=( "${user}" )
+
+	echo "${state}" > "${temp_dir}/${user}"
+done 3<<< "${list}"
+
+count=0
+total=0
+for user in "${users[@]}"; do
+	state="$(cat "${temp_dir}/${user}")"
+	echo "${user}: ${state}" >&2
+
+	total="$(( total + 1 ))"
+	if [ "${state}" == 'APPROVED' ]; then
+		count="$(( count + 1 ))"
+	fi
+done
+
+echo "Approved: ${count} / ${total}" >&2
