@@ -3,6 +3,18 @@
 set -e
 set -x
 
+delete_branch_like_a_jerk() {
+	branch="${1}"
+	if promp "Are you sure you want to delete ${branch}?"; then
+		git branch -D "${branch}"
+	fi
+}
+
+delete_branch() {
+	branch="${1}"
+	git branch -d "${branch}"
+}
+
 usage() {
 	echo "Checkout the specified Branch or Pull Request" >&2
 	echo >&2
@@ -10,14 +22,14 @@ usage() {
 	echo "  $(basename "${0}") <branch|prn>" >&2
 	echo >&2
 
-	if [ -n "${1}" ]; then echo "error: ${1}" >&2; fi
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
 
 	exit 1
 }
 
 initial="$(get-current-branch)"
-
 branch="${1:-$(get-repo-base-branch)}"
+push_or_pull="pull"
 
 if [ -z "${initial}" ]; then
 	usage "Couldn't figure out initial branch."
@@ -25,25 +37,42 @@ fi
 
 if [[ "${branch}" =~ ^[0-9]+$ ]]; then
 	pr_branch="$(get-pull-request "${branch}" | jq -r '.head' )"
-	if [ -z "${pr_branch}" ]; then usage "Couldn't find a branch for PR #${branch}."; fi
-	branch="${pr_branch}"	
+	if [ "${pr_branch}" == 'null' ]; then usage "Couldn't find a branch for PR #${branch}."; fi
+	branch="${pr_branch}"
 fi
 
 if [ -z "${branch}" ]; then usage "Branch or Pull Request Number required."; fi
 
-if has-local-branch "${branch}"; then
-	echo "Checking out local branch..." >&2
+if [ "${branch}" == "${initial}" ]; then
+	echo -e "${S_CS} You're already on ${branch} ${N_CS}" >&2
+
+elif has-local-branch "${branch}"; then
+	echo -e "${S_CS} Checking out local branch... ${N_CS}" >&2
 	git checkout "${branch}"
 
 elif has-remote-branch  "${branch}"; then
-	echo "Checking out remote branch..." >&2
+	echo -e "${S_CS} Checking out remote branch... ${N_CS}" >&2
 	git checkout "${branch}"
 
-else
-	echo "Creating new branch..." >&2
+elif prompt "Create ${branch}"; then
+	echo -e "${S_CS} Creating new branch... ${N_CS}" >&2
 	git checkout -b "${branch}"
-	git push -u origin "${branch}"
+	if [[ "${branch}" =~ ^te?mp ]]; then
+		echo -e "${I_CS} I noticed you checked out a temp branch. Good for you. ${N_CS}" >&2
+	else
+		push_or_pull='push'
+	fi
+
+else
+	usage 'Well, nevermind then.'
 fi
 
-git pull
-git branch -d "${initial}"
+if [ "${push_or_pull}" == 'push' ]; then
+	git push -u origin "${branch}"
+elif [ "${push_or_pull}" == 'pull' ]; then
+	git pull
+fi
+
+if [ "${branch}" != "${initial}" ]; then
+	delete_branch "${initial}"
+fi
