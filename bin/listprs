@@ -7,46 +7,21 @@ usage() {
 	echo "List all Pull Requests for current repo." >&2
 	echo >&2
 	echo "usage:" >&2
-	echo "  $(basename "${0}") [-b] " >&2
+	echo "  $(basename "${0}") [-b|--body]" >&2
 	echo >&2
 	echo "options:" >&2
-	echo "  -b    Also show the Pull Request body. " >&2
+	echo "  -b    Also show the Pull Request body." >&2
 	echo >&2
 
-	if [ -n "${1}" ]; then echo "error: ${1}" >&2; fi
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
 
 	exit 1
 }
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
-
-show_body=false
-
-if [[ "${1}" =~ ^-?-b(ody)?$ ]]; then
-	show_body=true
-	shift
-fi
-
 list="$(get-pull-request-list)"
 
 while read -u 3 -r details; do
-	pr_number="$(jq -r '.number' <<< "${details}")"
-	pr_state="$(jq -r '.state' <<< "${details}")"
-	pr_title="$(jq -r '.title' <<< "${details}")"
-	pr_user="$(jq -r '.user' <<< "${details}")"
-	pr_body="$(jq -r '.body' <<< "${details}" | sed -e 's/\\r\\n/Ω/g' | tr 'Ω' '\n')"
-	pr_head="$(jq -r '.head' <<< "${details}")"
-	pr_base="$(jq -r '.base' <<< "${details}")"
-	pr_link="$(jq -r '.link' <<< "${details}")"
-
-	state_color="${E_CS}"
-	if [ "${pr_state}" == 'open' ]; then state_color="${S_CS}"; fi
-
-	echo
-	echo -e "${K_CS}[${I_CS}${pr_user}${K_CS}] ${D_CS}#${pr_number} ${K_CS}(${state_color}${pr_state}${K_CS}) ${L_CS}${pr_link}${N_CS}"
-	echo -e "${I_CS}title${N_CS}: ${pr_title}"
-	echo -e "${I_CS}branch${N_CS}: ${pr_base} <- ${W_CS}${pr_head}${N_CS}"
-	if [ "${show_body}" = true ] && [ -n "${pr_body}" ]; then
-		echo -e "${pr_body}"
-	fi
+	printpr "${@}" "${details}"
+	# showpr "${@}" "$(jq -r .number <<< "${details}")"
 done 3<<< "${list}"

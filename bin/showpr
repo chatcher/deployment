@@ -1,0 +1,39 @@
+#!/bin/bash
+
+set -e
+
+usage() {
+	echo "Fetch and show details for the specified Pull Request" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") [-b] <Pull Request Number>" >&2
+	echo >&2
+	echo "options:" >&2
+	echo "  -b    Also show the Pull Request body. " >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+show_body=false
+if [[ "${1}" =~ ^-?-b(ody)?$ ]]; then
+	show_body=true
+	shift
+fi
+
+prn="${1}"
+
+if [ -z "${prn}" ]; then read -p 'Pull Request Number: ' -r prn; fi
+if [ -z "${prn}" ]; then usage 'Okay, nevermind.'; fi
+
+details="$(get-pull-request "${prn}")"
+
+if $show_body; then
+	printpr -b "${details}"
+else
+	printpr "${details}"
+fi
