@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+
+set -e
+
+usage() {
+	echo "Description" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") [-x] <arguments>" >&2
+	echo >&2
+	echo "options:" >&2
+	echo "  -x    Some unknown option" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+show_body=false
+if [[ "${1}" =~ ^-?-b(ody)?$ ]]; then
+	show_body=true
+	shift
+fi
+
+details="${1}"
+
+pr_number="$(jq -r '.number' <<< "${details}")"
+pr_open="$(jq -r '.open' <<< "${details}")"
+pr_state="$(jq -r '.state' <<< "${details}")"
+pr_title="$(jq -r '.title' <<< "${details}")"
+pr_user="$(jq -r '.user' <<< "${details}")"
+pr_body="$(jq -r '.body' <<< "${details}" | sed -e 's/\\r\\n/Ω/g' | tr 'Ω' '\n')"
+pr_head="$(jq -r '.head' <<< "${details}")"
+pr_base="$(jq -r '.base' <<< "${details}")"
+pr_link="$(jq -r '.link' <<< "${details}")"
+
+open_color="${E_CS}"
+state_color="${E_CS}"
+if [ "${pr_open}" == 'open' ]; then open_color="${S_CS}"; fi
+
+echo
+echo -e "${D_CS}#${pr_number} ${K_CS}[${I_CS}${pr_user}${K_CS}] ${K_CS}(${open_color}${pr_open} ${state_color}${pr_state}${K_CS})"
+echo -e "${pr_base} <- ${W_CS}${pr_head}${N_CS}"
+echo -e "${pr_title}"
+echo -e "${L_CS}${pr_link}${N_CS}"
+if [ "${show_body}" = true ] && [ -n "${pr_body}" ]; then
+	echo -e "${pr_body}"
+fi
