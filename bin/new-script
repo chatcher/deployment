@@ -7,15 +7,24 @@ usage() {
 	echo "Create a new script with the specified name." >&2
 	echo >&2
 	echo "usage:" >&2
-	echo "  $(basename "${0}") <script name>" >&2
+	echo "  $(basename "${0}") [-o] <script name>" >&2
+	echo >&2
+	echo "options:" >&2
+	echo "  -o    open script file for editing" >&2
 	echo >&2
 
-	if [ -n "${1}" ]; then echo "error: ${1}" >&2; fi
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
 
 	exit 1
 }
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+open_after=false
+if [ "${1}" == '-o' ]; then
+	open_after=true
+	shift
+fi
 
 name="${1}"
 
@@ -31,7 +40,6 @@ cd "${HOME}/deployment/bin" || usage "Uh... wtf did you do?"
 
 touch "${name}"
 chmod +x "${name}"
-which open >/dev/null && open -a 'Sublime Text' "${name}"
 
 cat <<'BODY' > "${name}"
 #!/usr/bin/env bash
@@ -43,10 +51,13 @@ usage() {
 	echo "Description" >&2
 	echo >&2
 	echo "usage:" >&2
-	echo "  $(basename "${0}") <arguments>" >&2
+	echo "  $(basename "${0}") [-x] <arguments>" >&2
+	echo >&2
+	echo "options:" >&2
+	echo "  -x    Some unknown option" >&2
 	echo >&2
 
-	if [ -n "${1}" ]; then echo "error: ${1}" >&2; fi
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
 
 	exit 1
 }
@@ -56,4 +67,10 @@ if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 # code goes here ...
 BODY
 
-which open >/dev/null || pico "${name}"
+if which open >/dev/null; then
+	if $open_after; then
+		open -a 'Sublime Text' "${name}"
+	fi
+else
+	pico "${name}"
+fi
