@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+
+set -e
+
+dumplog() {
+	file="${1}"
+
+	if [ -f "${file}.txt" ]; then
+		cat "${file}.txt"
+
+	else
+		usage "No work log for ${file}"
+	fi
+}
+
+usage() {
+	echo "Add the provided entry to today's work log." >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") [-s|-o|-d] [<entry...>]" >&2
+	echo >&2
+	echo "options:" >&2
+	echo "  -s    Show today's log" >&2
+	echo "  -o    Open today's log" >&2
+	echo "  -d    Open the worklog folder" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+cd "${HOME}/Desktop/worklogs" || usage "What did you do?!"
+
+file="$(date '+%Y-%m-%d')"
+
+args_done=false
+while ! $args_done && (( $# > 0)); do
+	opt="${1}"
+	case "${opt}" in
+		-s)
+			shift
+			dumplog "${1:-$file}"
+			exit
+			;;
+		-o )
+			shift
+			open "${1:-$file}"
+			exit
+			;;
+		-d )
+			open .
+			exit
+			;;
+		*)
+			break;;
+	esac
+	shift
+done
+
+entry="${*}"
+
+if [ -z "${entry}" ]; then read -p "Worklog entry for ${file}: " -r entry; fi
+if [ -z "${entry}" ]; then usage 'Well, nevermind then.'; fi
+
+echo "${entry}" >> "${file}.txt"
