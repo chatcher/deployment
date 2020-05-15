@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+set -e
+set -x
+
+usage() {
+	echo "Pick up the changes from the specified Branch or Pull Request." >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <branch|prn>" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+initial="$(get-current-branch)"
+branch="${1}"
+
+if [ -z "${branch}" ]; then read -p 'Branch or Pull Request? ' -r branch; fi
+if [ -z "${branch}" ]; then usage "Branch or Pull Request Number required."; fi
+
+checkout "${branch}"
+checkout temp
+git rebase origin/dev || prompt 'You wanna fix that crap?'
+git reset origin/dev
+git stash
+checkout "${initial}"
+git stash pop
