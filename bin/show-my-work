@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -e
+set -x
+
+usage() {
+	echo "Print your commits for the past week." >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}")" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+git log --pretty=format:"%ad -> %cd: %s" --date=short --all --since='7 days ago' --author="$(git config user.name)" | sort
