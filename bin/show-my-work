@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-set -e
-set -x
-
 usage() {
 	echo "Print your commits for the past week." >&2
 	echo >&2
