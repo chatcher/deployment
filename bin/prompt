@@ -28,7 +28,7 @@ echo >&2
 echo -e "${P_CS}${*}${N_CS}" >&2
 read -p "[${options}] " -r response
 
-if [[ "${response:-$default}" =~ [Yy] ]]; then exit 0; fi
-if [[ "${response:-$default}" =~ [Nn] ]]; then exit 1; fi
+if [[ "${response:-$default}" =~ ^[Yy] ]]; then exit 0; fi
+if [[ "${response:-$default}" =~ ^[Nn] ]]; then exit 1; fi
 
 usage "Invalid response: '${response}'"
