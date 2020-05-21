@@ -5,7 +5,7 @@ set -x
 
 delete_branch_like_a_jerk() {
 	branch="${1}"
-	if promp "Are you sure you want to delete ${branch}?"; then
+	if prompt "Are you sure you want to delete ${branch}?"; then
 		git branch -D "${branch}"
 	fi
 }
