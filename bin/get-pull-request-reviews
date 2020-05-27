@@ -22,7 +22,7 @@ prn="${1}"
 
 if [ -z "${prn}" ]; then usage 'Pull Request Number required.'; fi
 
-response="$(curl -H "${GITHUB_AUTH_HEADER}" "$(get-repo-api)/repos/$(get-repo-name)/pulls/${prn}/reviews" -s)"
+response="$(curl -H "${GITHUB_AUTH_HEADER}" "$(get-repo-api)/repos/$(get-repo-path)/pulls/${prn}/reviews" -s)"
 
 message="$(jq -r '.message' <<< "${response}" 2>/dev/null || :)"
 

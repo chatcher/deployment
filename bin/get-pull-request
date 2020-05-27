@@ -23,6 +23,6 @@ if [ -z "${prn}" ]; then usage 'Okay, nevermind.'; fi
 
 GITHUB_AUTH_HEADER="Authorization: bearer ${GITHUB_TOKEN}"
 
-response="$(curl -H "${GITHUB_AUTH_HEADER}" "$(get-repo-api)/repos/$(get-repo-name)/pulls/${prn}" -s)"
+response="$(curl -H "${GITHUB_AUTH_HEADER}" "$(get-repo-api)/repos/$(get-repo-path)/pulls/${prn}" -s)"
 
 jq '{number:.number,open:.state,state:.mergeable_state,title:.title,user:.user.login,body:.body,head:.head.ref,base:.base.ref,link:._links.html.href}' <<< "${response}"

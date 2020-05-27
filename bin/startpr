@@ -75,7 +75,7 @@ fi
 
 git commit -S -m "${message}" --no-verify
 git push -u origin "${branch}"
-response="$(curl -H "Authorization: bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.shadow-cat-preview+json" -d "${data}" "$(get-repo-api)/repos/$(get-repo-name)/pulls" -s)"
+response="$(curl -H "Authorization: bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.shadow-cat-preview+json" -d "${data}" "$(get-repo-api)/repos/$(get-repo-path)/pulls" -s)"
 
 prn="$(jq '.number' <<< "${response}")"
 user="$(jq -r '.user.login' <<< "${response}")"
@@ -96,4 +96,4 @@ read -r -d '' data << JSON || :
 }
 JSON
 
-curl -H "Authorization: bearer ${GITHUB_TOKEN}" -d "${data}" "$(get-repo-api)/repos/$(get-repo-name)/issues/${prn}/assignees"
+curl -H "Authorization: bearer ${GITHUB_TOKEN}" -d "${data}" "$(get-repo-api)/repos/$(get-repo-path)/issues/${prn}/assignees"

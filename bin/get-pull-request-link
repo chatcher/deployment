@@ -25,8 +25,8 @@ url_opt="$(grep 'url = ' .git/config | sed -E -e 's/[[:space:]]*url = //')"
 domain="$(sed -E -e 's/^(git@|https:\/\/)([a-zA-Z0-9._-]+)(\/.*|:.*)/\2/' <<< "${url_opt}")"
 
 if [ -z "${1}" ]; then
-	echo "https://${domain}/$(get-repo-name)/pulls" >&1
+	echo "https://${domain}/$(get-repo-path)/pulls" >&1
 
 else
-	echo "https://${domain}/$(get-repo-name)/pull/${1}" >&1
+	echo "https://${domain}/$(get-repo-path)/pull/${1}" >&1
 fi

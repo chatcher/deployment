@@ -32,4 +32,4 @@ else
 fi
 
 # report user/repo without trailing .git (if present)
-sed -E -e 's/.git$//' <<< "${repo#*/}"
+sed -E -e 's/.git$//' <<< "${repo%/*}"
