@@ -19,8 +19,7 @@ usage() {
 }
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
-list="$(get-pull-request-list)"
 
 while read -u 3 -r details; do
-	showpr "${@}" "$(jq .number <<< "${details}")"
-done 3<<< "${list}"
+	printpr "${@}" "${details}"
+done 3<<< "$(get-pull-request-list)"

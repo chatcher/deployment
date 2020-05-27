@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 
@@ -16,12 +16,48 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-GITHUB_AUTH_HEADER="Authorization: bearer ${GITHUB_TOKEN}"
+read -r -d '' data <<JSON
+{
+  "query": "{\
+    repository(\
+      owner: \"$(get-repo-owner)\"\
+      name: \"$(get-repo-name)\"\
+    ) {\
+      pullRequests(\
+        states: [OPEN]\
+        last: 50\
+      ) {\
+       nodes {\
+        number\
+        title\
+        user: author { login }\
+        base: baseRefName\
+        head: headRefName\
+        state: mergeable\
+        open: state\
+        link: permalink\
+        reviews(\
+          states: [\
+            PENDING\
+            APPROVED\
+            CHANGES_REQUESTED\
+          ]\
+          last: 50\
+        ) {\
+          nodes {\
+            user: author { login }\
+            state\
+          }\
+        }\
+        }\
+      }\
+    }\
+  }"
+}
+JSON
 
-response="$(curl -H "${GITHUB_AUTH_HEADER}" "$(get-repo-api)/repos/$(get-repo-name)/pulls" -s)"
+AUTH_HEADER="Authorization: bearer ${GITHUB_TOKEN}"
+PR_NODE_PATH=".data.repository.pullRequests.nodes"
+JSON_STRUCTURE="{number,title,user:.user.login,base,head,open,state,link,reviews:.reviews.nodes|.[]|[{user:.user.login,state}]}"
 
-message="$(jq -r '.message' <<< "${response}" 2>/dev/null || :)"
-
-if [ -n "${message}" ]; then usage "${message}"; fi
-
-jq -c '.[] | {number:.number,open:.state,state:.mergeable_state,head:.head.ref,base:.base.ref,link:._links.html.href,title:.title,user:.user.login,body:.body}' <<< "${response}"
+curl -H "${AUTH_HEADER}" -d "${data}" "$(get-repo-graphql)" -s | jq -c "${PR_NODE_PATH} | .[] | ${JSON_STRUCTURE}"
