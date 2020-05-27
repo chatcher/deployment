@@ -13,8 +13,10 @@ delete_branch_like_a_jerk() {
 delete_branch() {
 	branch="${1}"
 	if [[ "${branch}" =~ ^te?mp ]]; then
+		echo -e "${S_CS} Deleting temp branch ${N_CS}" >&2
 		git branch -D "${branch}"
 	elif [ -n "${branch}" ]; then
+		echo -e "${S_CS} Deleting ${branch} ${N_CS}" >&2
 		git branch -d "${branch}" || delete_branch_like_a_jerk "${branch}"
 	else
 		echo -e "${S_CS} No old branch to delete (probably a detached head) ${N_CS}" >&2
@@ -44,6 +46,7 @@ fi
 
 if [ -z "${branch}" ]; then usage "Branch or Pull Request Number required."; fi
 
+echo -e "${S_CS} Fetching remote branches... ${N_CS}" >&2
 git fetch
 
 if [ "${branch}" == "${initial}" ]; then
@@ -58,7 +61,7 @@ elif has-remote-branch  "${branch}"; then
 	git checkout "${branch}"
 
 elif [[ "${branch}" =~ ^te?mp ]]; then
-	echo -e "${I_CS} I noticed you checked out a temp branch. Good for you. ${N_CS}" >&2
+	echo -e "${S_CS} Creating temp branch... ${N_CS}" >&2
 	git checkout -b "${branch}"
 
 elif prompt "Create ${branch}"; then
