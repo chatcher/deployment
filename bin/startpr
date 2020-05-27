@@ -20,80 +20,8 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-while [[ "${1}" =~ ^- ]]; do
-	if [ "${1}" == '-b' ]; then
-		shift
-		branch="${1}"
-	fi
+initial_branch="$(get-current-branch)"
 
-	shift
-done
+chainpr "$@" || exit 1
 
-if ! has-staged-changes; then usage "Expected staged changes."; fi
-
-# TODO: update base branch before opening PR
-
-bodyfile="$(mktemp)"
-printf "%s\n\n" "${*}" > "${bodyfile}"
-if [ -f 'PULL_REQUEST_TEMPLATE.md' ]; then cat 'PULL_REQUEST_TEMPLATE.md' >> "${bodyfile}"; fi
-nano "${bodyfile}"
-
-title="$(head -n 1 "${bodyfile}")"
-body="$(tail -n +2 "${bodyfile}" | sed -e '/./,$!d' | tr '\n' 'Ω' | sed -e 's/Ω/\\r\\n/g')"
-
-rm "${bodyfile}"
-
-message="$(generate-commit-message "${title}")"
-branch="${branch:-$(generate-branch-name "${title}")}"
-base="$(get-repo-base-branch)"
-
-if [ -z "${title}" ]; then usage "Pull Request title is required."; fi
-if [ -z "${message}" ]; then usage "Could not derive commit message."; fi
-if [ -z "${branch}" ]; then usage "Could not derive branch name."; fi
-if [ -z "${base}" ]; then usage "Could not determine base branch."; fi
-
-# TODO: try to recovery from this:
-if has-remote-branch "${branch}" && ! [ "${branch}" != "$(get-current-branch)" ]; then usage "Branch already exists: '${branch}'"; fi
-
-read -d '' -r data <<JSON || :
-{
-	"title": "${title}",
-	"base": "${base}",
-	"head": "${branch}",
-	"body": "${body}",
-	"draft": true
-}
-JSON
-
-echo "${data}" >&2
-
-if ! prompt 'Look good?'; then exit 1; fi
-
-if [ "${branch}" != "$(get-current-branch)" ]; then
-	git checkout -b "${branch}"
-fi
-
-git commit -S -m "${message}" --no-verify
-git push -u origin "${branch}"
-response="$(curl -H "Authorization: bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.shadow-cat-preview+json" -d "${data}" "$(get-repo-api)/repos/$(get-repo-path)/pulls" -s)"
-
-prn="$(jq '.number' <<< "${response}")"
-user="$(jq -r '.user.login' <<< "${response}")"
-
-if [ -z "${prn}" ] || [ "${prn}" == 'null' ]; then
-	echo "${response}" >&2
-	echo "Something bad happened." >&2
-	exit 1
-fi
-
-open "$(get-pull-request-link "${prn}")"
-
-read -r -d '' data << JSON || :
-{
-	"assignees": [
-		"${user}"
-	]
-}
-JSON
-
-curl -H "Authorization: bearer ${GITHUB_TOKEN}" -d "${data}" "$(get-repo-api)/repos/$(get-repo-path)/issues/${prn}/assignees"
+checkout "${initial_branch}"
