@@ -65,4 +65,5 @@ entry="${*}"
 if [ -z "${entry}" ]; then read -p "Worklog entry for ${file}: " -r entry; fi
 if [ -z "${entry}" ]; then usage 'Well, nevermind then.'; fi
 
+echo "writing '${entry}' to ${file}.txt" >&2
 echo "${entry}" >> "${file}.txt"
