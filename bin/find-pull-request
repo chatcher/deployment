@@ -19,10 +19,10 @@ if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 branch="${1:-$(get-current-branch)}"
 
 
-while read -u 3 -r line; do
-	pr_branch="$(jq -r '.head' <<< "${line}")"
+while read -u 3 -r details; do
+	pr_branch="$(jq -r '.head' <<< "${details}")"
 	if [ "${branch}" == "${pr_branch}" ]; then
-		echo "${line}"
+		printpr "${details}"
 		exit
 	fi
 done 3<<< "$(get-pull-request-list)"
