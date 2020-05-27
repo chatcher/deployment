@@ -44,6 +44,8 @@ fi
 
 if [ -z "${branch}" ]; then usage "Branch or Pull Request Number required."; fi
 
+get fetch
+
 if [ "${branch}" == "${initial}" ]; then
 	echo -e "${S_CS} You're already on ${branch} ${N_CS}" >&2
 
