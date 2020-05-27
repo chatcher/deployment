@@ -14,8 +14,10 @@ delete_branch() {
 	branch="${1}"
 	if [[ "${branch}" =~ ^te?mp ]]; then
 		git branch -D "${branch}"
-	else
+	elif [ -n "${branch}" ]; then
 		git branch -d "${branch}" || delete_branch_like_a_jerk "${branch}"
+	else
+		echo -e "${S_CS} No old branch to delete (probably a detached head) ${N_CS}" >&2
 	fi
 }
 
@@ -33,10 +35,6 @@ usage() {
 
 initial="$(get-current-branch)"
 branch="${1:-$(get-repo-base-branch)}"
-
-if [ -z "${initial}" ]; then
-	usage "Couldn't figure out initial branch."
-fi
 
 if [[ "${branch}" =~ ^[0-9]+$ ]]; then
 	pr_branch="$(get-pull-request "${branch}" | jq -r '.head' )"
