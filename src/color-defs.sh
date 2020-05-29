@@ -5,7 +5,7 @@ export S_CS="\033[32m" # status  - green
 export E_CS="\033[31m" # error   - red
 export W_CS="\033[33m" # warning - orange
 
-export I_CS="\033[94m"   # info   - blue
+export I_CS="\033[38;5;39m"   # info   - blue
 export D_CS="\033[35m"   # debug  - purple
 export P_CS="\033[36m"   # prompt - cyan
 export A_CS="\033[31m\a" # alert  - red with bell
