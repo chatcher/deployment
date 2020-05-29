@@ -16,7 +16,7 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-read -r -d '' data <<JSON
+read -r -d '' data <<JSON || :
 {
   "query": "{\
     repository(\
@@ -33,7 +33,8 @@ read -r -d '' data <<JSON
         user: author { login }\
         base: baseRefName\
         head: headRefName\
-        state: mergeable\
+        mergeable: mergeable\
+        state: mergeStateStatus\
         open: state\
         link: permalink\
         reviews(\
@@ -57,7 +58,8 @@ read -r -d '' data <<JSON
 JSON
 
 AUTH_HEADER="Authorization: bearer ${GITHUB_TOKEN}"
+ACCEPT_HEADER="Accept: application/vnd.github.merge-info-preview+json"
 PR_NODE_PATH=".data.repository.pullRequests.nodes"
 JSON_STRUCTURE="{number,title,user:.user.login,base,head,open,state,link,reviews:.reviews.nodes|.[]|[{user:.user.login,state}]}"
 
-curl -H "${AUTH_HEADER}" -d "${data}" "$(get-repo-graphql)" -s | jq -c "${PR_NODE_PATH} | .[] | ${JSON_STRUCTURE}"
+curl -H "${AUTH_HEADER}" -H "${ACCEPT_HEADER}" -d "${data}" "$(get-repo-graphql)" -s | jq -c "${PR_NODE_PATH} | .[] | ${JSON_STRUCTURE}"
