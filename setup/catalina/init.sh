@@ -8,13 +8,11 @@ open 'https://sequelpro.com/download#auto-start'
 
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
 
-brew install nvm
-brew install shellcheck
-
-brew cask install homebrew/cask-versions/adoptopenjdk8
-
-brew install jenkins-lts
-#brew services start jenkins-lts
+brew install bash # because default v3 does not have associative arrays
+brew install dos2unix # to fix line endings more easily
+brew install jq # because JSON
+brew install nvm # because node/npm
+brew install shellcheck # to lint shell scripts
 
 nvm install 10
 nvm install 12
