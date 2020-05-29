@@ -37,7 +37,7 @@ pr_head="$(jq -r '.head' <<< "${details}")"
 pr_base="$(jq -r '.base' <<< "${details}")"
 pr_link="$(jq -r '.link' <<< "${details}")"
 
-reviews="$(jq -c '.reviews|.[]' <<< "${details}")"
+reviews="$(jq -c '.reviews//[]|.[]' <<< "${details}")"
 
 open_color="${E_CS}"
 state_color="${E_CS}"
