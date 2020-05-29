@@ -44,11 +44,11 @@ state_color="${E_CS}"
 if [ "${pr_open}" == 'open' ]; then open_color="${S_CS}"; fi
 if [ "${pr_state}" == 'mergeable' ]; then state_color="${S_CS}"; fi
 
-while read -u 3 -r review; do
-	rev_user="$(jq -r '.user' <<< "${review}")"
-	rev_state="$(jq -r '.state' <<< "${review}")"
-	echo "${rev_user}: ${rev_state}" >&2
-done 3<<<"${reviews}"
+declare -A approval
+approval[count]=0
+approval[total]=0
+approval[ch_rq]=0
+
 echo >&2
 echo -e "${D_CS}#${pr_number} ${I_CS}${pr_user} ${K_CS}- ${open_color}${pr_open} ${state_color}${pr_state}${N_CS}" >&2
 echo -e "${K_CS}${pr_base} <- ${W_CS}${pr_head}${N_CS}" >&2
@@ -56,4 +56,32 @@ echo -e "${N_CS}${pr_title}${N_CS}" >&2
 echo -e "${L_CS}${pr_link}${N_CS}" >&2
 if [ "${show_body}" = true ] && [ -n "${pr_body}" ]; then
 	echo -e "${pr_body}" >&2
+fi
+
+if [ -n "${reviews}" ]; then
+	while read -u 3 -r review; do
+		rev_user="$(jq -r '.user' <<< "${review}")"
+		rev_state="$(jq -r '.state' <<< "${review}")"
+		echo "${rev_user}: ${rev_state}" >&2
+
+		case "${rev_state}" in
+			APPROVED)
+				approval[count]="$(( approval[count] + 1 ))"
+				approval[total]="$(( approval[total] + 1 ))"
+				;;
+			CHANGES_REQUESTED)
+				approval[ch_rq]="$(( approval[ch_rq] + 1 ))"
+				approval[total]="$(( approval[total] + 1 ))"
+				;;
+			*) echo -e "${A_CS} Unknown review status: '${rev_state}'" >&2
+		esac
+	done 3<<<"${reviews}"
+fi
+
+if (( approval[count] > 0 )); then
+	echo -e "${S_CS}Approved: ${approval[count]} / ${approval[total]}" >&2
+fi
+
+if (( approval[ch_rq] > 0 )); then
+	echo -e "${A_CS}Blockers: ${approval[ch_rq]}${N_CS}" >&2
 fi
