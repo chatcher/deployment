@@ -44,11 +44,6 @@ state_color="${E_CS}"
 if [ "${pr_open}" == 'open' ]; then open_color="${S_CS}"; fi
 if [ "${pr_state}" == 'mergeable' ]; then state_color="${S_CS}"; fi
 
-declare -A approval
-approval[count]=0
-approval[total]=0
-approval[ch_rq]=0
-
 echo >&2
 echo -e "${D_CS}#${pr_number} ${I_CS}${pr_user} ${K_CS}- ${open_color}${pr_open} ${state_color}${pr_state}${N_CS}" >&2
 echo -e "${K_CS}${pr_base} <- ${W_CS}${pr_head}${N_CS}" >&2
@@ -58,30 +53,49 @@ if [ "${show_body}" = true ] && [ -n "${pr_body}" ]; then
 	echo -e "${pr_body}" >&2
 fi
 
+declare -A review_users
+declare -A approval
+approval[count]=0
+approval[total]=0
+approval[ch_rq]=0
+
+
 if [ -n "${reviews}" ]; then
 	while read -u 3 -r review; do
-		rev_user="$(jq -r '.user' <<< "${review}")"
-		rev_state="$(jq -r '.state' <<< "${review}")"
-		echo "${rev_user}: ${rev_state}" >&2
+		review_user="$(jq -r '.user' <<< "${review}")"
+		review_state="$(jq -r '.state' <<< "${review}")"
 
-		case "${rev_state}" in
-			APPROVED)
-				approval[count]="$(( approval[count] + 1 ))"
-				approval[total]="$(( approval[total] + 1 ))"
-				;;
-			CHANGES_REQUESTED)
-				approval[ch_rq]="$(( approval[ch_rq] + 1 ))"
-				approval[total]="$(( approval[total] + 1 ))"
-				;;
-			*) echo -e "${A_CS} Unknown review status: '${rev_state}'" >&2
-		esac
+		review_users[$review_user]="${review_state}"
 	done 3<<<"${reviews}"
 fi
 
+for review_user in "${!review_users[@]}"; do
+	review_state="${review_users[$review_user]}"
+
+	echo "${review_user}: ${review_state}" >&2
+
+	approval[total]="$(( approval[total] + 1 ))"
+
+	case "${review_state}" in
+		APPROVED)
+			approval[count]="$(( approval[count] + 1 ))"
+			;;
+		CHANGES_REQUESTED)
+			approval[ch_rq]="$(( approval[ch_rq] + 1 ))"
+			;;
+		*) echo -e "${A_CS} Unknown review status: '${review_state}'" >&2
+	esac
+done
+
+approval_color="${I_CS}"
+if (( approval[count] > 1 )); then
+	approval_color="${S_CS}"
+fi
+
 if (( approval[count] > 0 )); then
-	echo -e "${S_CS}Approved: ${approval[count]} / ${approval[total]}" >&2
+	echo -e "${approval_color}Approved: ${approval[count]} / ${approval[total]}" >&2
 fi
 
 if (( approval[ch_rq] > 0 )); then
-	echo -e "${A_CS}Blockers: ${approval[ch_rq]}${N_CS}" >&2
+	echo -e "${E_CS}Blockers: ${approval[ch_rq]}${N_CS}" >&2
 fi
