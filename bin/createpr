@@ -29,12 +29,12 @@ body="$(tail -n +2 "${bodyfile}" | sed -e '/./,$!d' | tr '\n' 'Î©' | sed -e 's/Î
 
 rm "${bodyfile}"
 
-message="$(generate-commit-message "${title}")"
-branch="$(get-current-branch)"
+# message="$(generate-commit-message "${title}")"
+branch="$(generate-branch-name "${title}")"
 base="$(get-repo-base-branch)"
 
 if [ -z "${title}" ]; then usage "Pull Request title is required."; fi
-if [ -z "${message}" ]; then usage "Could not derive commit message."; fi
+# if [ -z "${message}" ]; then usage "Could not derive commit message."; fi
 if [ -z "${branch}" ]; then usage "Could not derive branch name."; fi
 if [ -z "${base}" ]; then usage "Could not determine base branch."; fi
 
@@ -48,13 +48,18 @@ read -d '' -r data <<JSON || :
 }
 JSON
 
-# echo "${data}" > "$(md5 <<< "${branch}").json"
 echo "${data}" >&2
 
 if ! prompt 'Look good?'; then exit 1; fi
 
+if [ "${branch}" != "$(get-current-branch)" ]; then
+	git checkout -b "${branch}"
+fi
+
 git push -u origin "${branch}"
-response="$(curl -H "Authorization: bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.shadow-cat-preview+json" -d "${data}" "$(get-repo-api)/repos/$(get-repo-path)/pulls" -s)"
+auth_header="Authorization: bearer ${GITHUB_TOKEN}"
+accept_header='Accept: application/vnd.github.shadow-cat-preview+json'
+response="$(curl -H "${auth_header}" -H "${accept_header}" -d "${data}" "$(get-repo-api)/repos/$(get-repo-path)/pulls" -s)"
 
 prn="$(jq '.number' <<< "${response}")"
 user="$(jq -r '.user.login' <<< "${response}")"
