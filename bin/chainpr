@@ -7,10 +7,7 @@ usage() {
 	echo "Create a draft Pull Request from the staged changes." >&2
 	echo >&2
 	echo "usage:" >&2
-	echo "  $(basename "${0}") [-b <branch>] <title>" >&2
-	echo >&2
-	echo "options:" >&2
-	echo "  -b    The branch name to use (because it's different from the commit or title)." >&2
+	echo "  $(basename "${0}") <title>" >&2
 	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
@@ -20,18 +17,7 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-while [[ "${1}" =~ ^- ]]; do
-	if [ "${1}" == '-b' ]; then
-		shift
-		branch="${1}"
-	fi
-
-	shift
-done
-
 if ! has-staged-changes; then usage "Expected staged changes."; fi
-
-# TODO: update base branch before opening PR
 
 bodyfile="$(mktemp)"
 printf "%s\n\n" "${*}" > "${bodyfile}"
@@ -44,7 +30,7 @@ body="$(tail -n +2 "${bodyfile}" | sed -e '/./,$!d' | tr '\n' 'Î©' | sed -e 's/Î
 rm "${bodyfile}"
 
 message="$(generate-commit-message "${title}")"
-branch="${branch:-$(generate-branch-name "${title}")}"
+branch="$(generate-branch-name "${title}")"
 base="$(get-repo-base-branch)"
 
 if [ -z "${title}" ]; then usage "Pull Request title is required."; fi
@@ -52,8 +38,10 @@ if [ -z "${message}" ]; then usage "Could not derive commit message."; fi
 if [ -z "${branch}" ]; then usage "Could not derive branch name."; fi
 if [ -z "${base}" ]; then usage "Could not determine base branch."; fi
 
-# TODO: try to recovery from this:
-if has-remote-branch "${branch}" && ! [ "${branch}" != "$(get-current-branch)" ]; then usage "Branch already exists: '${branch}'"; fi
+# TODO: try to recover from this:
+if has-remote-branch "${branch}" && ! [ "${branch}" != "$(get-current-branch)" ]; then
+	usage "Branch already exists: '${branch}'"
+fi
 
 read -d '' -r data <<JSON || :
 {
@@ -75,7 +63,9 @@ fi
 
 git commit -S -m "${message}" --no-verify
 git push -u origin "${branch}"
-response="$(curl -H "Authorization: bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.shadow-cat-preview+json" -d "${data}" "$(get-repo-api)/repos/$(get-repo-path)/pulls" -s)"
+auth_header="Authorization: bearer ${GITHUB_TOKEN}"
+accept_header='Accept: application/vnd.github.shadow-cat-preview+json'
+response="$(curl -H "${auth_header}" -H "${accept_header}" -d "${data}" "$(get-repo-api)/repos/$(get-repo-path)/pulls" -s)"
 
 prn="$(jq '.number' <<< "${response}")"
 user="$(jq -r '.user.login' <<< "${response}")"
@@ -88,7 +78,7 @@ fi
 
 open "$(get-pull-request-link "${prn}")"
 
-read -r -d '' data << JSON || :
+read -d '' -r data << JSON || :
 {
 	"assignees": [
 		"${user}"
