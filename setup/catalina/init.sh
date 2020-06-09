@@ -12,6 +12,7 @@ brew install bash # because default v3 does not have associative arrays
 brew install dos2unix # to fix line endings more easily
 brew install jq # because JSON
 brew install nvm # because node/npm
+brew install pgcli # postgres client
 brew install shellcheck # to lint shell scripts
 
 nvm install 10
