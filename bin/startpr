@@ -7,10 +7,7 @@ usage() {
 	echo "Create a draft Pull Request from the staged changes." >&2
 	echo >&2
 	echo "usage:" >&2
-	echo "  $(basename "${0}") [-b <branch>] <title>" >&2
-	echo >&2
-	echo "options:" >&2
-	echo "  -b    The branch name to use (because it's different from the commit or title)." >&2
+	echo "  $(basename "${0}") <title>" >&2
 	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
