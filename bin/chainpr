@@ -32,6 +32,7 @@ rm "${bodyfile}"
 message="$(generate-commit-message "${title}")"
 branch="$(generate-branch-name "${title}")"
 base="$(get-repo-base-branch)"
+draft='true'
 
 if [ -z "${title}" ]; then usage "Pull Request title is required."; fi
 if [ -z "${message}" ]; then usage "Could not derive commit message."; fi
@@ -49,7 +50,7 @@ read -d '' -r data <<JSON || :
 	"base": "${base}",
 	"head": "${branch}",
 	"body": "${body}",
-	"draft": true
+	"draft": ${draft}
 }
 JSON
 
