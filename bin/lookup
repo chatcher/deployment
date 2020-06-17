@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+set -e
+# set -x
+
+usage() {
+	echo "Fetch the branch for the spcified Pull Request." >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <Pull Request>" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+prn="$(read-prn "${1}")"
+
+if [ -z "${prn}" ]; then usage 'Okay, nevermind.'; fi
+
+if [[ "${prn}" =~ ^[0-9]+$ ]]; then
+	pr_branch="$(get-pull-request "${prn}" | jq -r '.head' )"
+	if [ "${pr_branch}" == 'null' ]; then usage "Couldn't find a branch for PR #${prn}."; fi
+	echo "${pr_branch}" >&1
+
+else
+	usage "Pull Request numbers are numeric. I dunno what this '${prn}' garbage is."
+fi
