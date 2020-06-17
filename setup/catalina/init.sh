@@ -11,10 +11,16 @@ open 'https://sequelpro.com/download#auto-start'
 brew install bash # because default v3 does not have associative arrays
 brew install dos2unix # to fix line endings more easily
 brew install jq # because JSON
+brew install node@10
 brew install nvm # because node/npm
 brew install pgcli # postgres client
 brew install shellcheck # to lint shell scripts
 
+nvm use system
+npm i -g eslint
+
+nvm install 8
 nvm install 10
 nvm install 12
 
+nvm alias default=8
