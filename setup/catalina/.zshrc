@@ -27,34 +27,32 @@ if [ -d "$HOME/bin" ] ; then
 fi
 
 alias ll='ls -laphGF'
+alias time='/usr/bin/time -p'
+alias oracle="${HOME}/sqlcl/bin/sql"
 
 autoload -U add-zsh-hook
 load-nvmrc() {
-  local node_version
-  local nvmrc_path
+	local node_version="$(nvm version)"
+	local nvmrc_path="$(nvm_find_nvmrc)"
 
-  node_version="$(nvm version)"
-  nvmrc_path="$(nvm_find_nvmrc)"
+	if [ -n "$nvmrc_path" ]; then
+		local nvmrc_node_version=$(nvm version "$(cat "${nvmrc_path}")")
 
-  if [ -n "$nvmrc_path" ]; then
-    local nvmrc_node_version
-
-    nvmrc_node_version=$(nvm version "$(cat "${nvmrc_path}")")
-
-    if [ "$nvmrc_node_version" = "N/A" ]; then
-      nvm install
-    elif [ "$nvmrc_node_version" != "$node_version" ]; then
-      nvm use
-    fi
-  elif [ "$node_version" != "$(nvm version default)" ]; then
-    echo "Reverting to nvm default version"
-    nvm use default
-  fi
+		if [ "$nvmrc_node_version" = "N/A" ]; then
+			nvm install
+		elif [ "$nvmrc_node_version" != "$node_version" ]; then
+			nvm use
+		fi
+	elif [ "$node_version" != "$(nvm version default)" ]; then
+		echo "Reverting to nvm default version"
+		nvm use default
+	fi
 }
 add-zsh-hook chpwd load-nvmrc
 load-nvmrc
 
 precmd() {
+	PATH="$(echo "${PATH}" | sed -E -e $'s/:/\\\n/g' | awk '!seen[$0]++' | tr '\n' ':' | sed -E -e 's/::/:/g' -e 's/:$//')"; export PATH
 	print -rP '%(?.%F{green}√.%F{red}%?) %{%F{8}%}[%D %T]'
 }
 PS1='%{%F{8}%}[!%h] %{%F{14}%}%~ %{%F{10}%}%# %f'

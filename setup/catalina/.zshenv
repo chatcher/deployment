@@ -1,4 +1,9 @@
 #!/usr/bin/env zsh
+
+if [ -f "${HOME}/.env" ]; then source "${HOME}/.env"; fi
+
+export PATH="$PATH:/usr/local/opt/node@10/bin"
+
 export GITHUB_TOKEN='c41727b5c47646b72a47ecf15607fd4790143228'
 
 export NVM_DIR="$HOME/.nvm"
