@@ -38,6 +38,11 @@ if [ -z "${title}" ]; then usage "Pull Request title is required."; fi
 if [ -z "${branch}" ]; then usage "Could not derive branch name."; fi
 if [ -z "${base}" ]; then usage "Could not determine base branch."; fi
 
+#
+# if has-remote-branch "${branch}" && ! [ "${branch}" != "$(get-current-branch)" ]; then
+# 	usage "Branch already exists: '${branch}'"
+# fi
+
 read -d '' -r data <<JSON || :
 {
 	"title": "${title}",
@@ -56,6 +61,7 @@ if [ "${branch}" != "$(get-current-branch)" ]; then
 	git checkout -b "${branch}"
 fi
 
+# git commit -S -m "${message}" --no-verify
 git push -u origin "${branch}"
 auth_header="Authorization: bearer ${GITHUB_TOKEN}"
 accept_header='Accept: application/vnd.github.shadow-cat-preview+json'
