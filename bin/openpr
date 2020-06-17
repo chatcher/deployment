@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+set -e
+set -x
+
+usage() {
+	echo "Open the specified Pull Request in Chrome" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") [-x] <arguments>" >&2
+	echo >&2
+	echo "options:" >&2
+	echo "  -x    Some unknown option" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+prn="${1}"
+
+if [ -z "${prn}" ]; then read -p 'Pull Request Number: ' -r prn; fi
+if [ -z "${prn}" ]; then usage 'Okay, nevermind.'; fi
+
+open "$(get-repo-url)/pull/${prn}"
