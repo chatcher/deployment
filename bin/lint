@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+set -e
+
+usage() {
+	echo "Description" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") [-x] <arguments>" >&2
+	echo >&2
+	echo "options:" >&2
+	echo "  -x    Some unknown option" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+lint() {
+	if [ -z "$(git diff --staged)" ]; then
+		git diff --name-only | xargs eslint
+	else
+		git diff --name-only --staged | xargs eslint
+	fi
+}
+
+lint-fix() {
+	if [ -z "$(git diff --staged)" ]; then
+		git diff --name-only | xargs eslint --fix
+	else
+		git diff --name-only --staged | xargs eslint --fix
+	fi
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+if [[ "${1}" =~ ^(--)?fix$ ]]; then
+	lint-fix
+
+elif [ -n "${1}" ]; then
+	usage "Unknown argument: ${1}"
+
+else
+	lint
+fi
