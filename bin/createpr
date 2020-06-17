@@ -38,7 +38,7 @@ if [ -z "${title}" ]; then usage "Pull Request title is required."; fi
 if [ -z "${branch}" ]; then usage "Could not derive branch name."; fi
 if [ -z "${base}" ]; then usage "Could not determine base branch."; fi
 
-#
+# TODO: try to recover from this:
 # if has-remote-branch "${branch}" && ! [ "${branch}" != "$(get-current-branch)" ]; then
 # 	usage "Branch already exists: '${branch}'"
 # fi
