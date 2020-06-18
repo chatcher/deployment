@@ -54,19 +54,19 @@ if [ "${branch}" == "${initial}" ]; then
 
 elif has-local-branch "${branch}"; then
 	echo -e "${S_CS} Checking out local branch... ${N_CS}" >&2
-	git checkout "${branch}"
+	git checkout "${branch}" || usage "Failed to checkout ${branch}"
 
 elif has-remote-branch  "${branch}"; then
 	echo -e "${S_CS} Checking out remote branch... ${N_CS}" >&2
-	git checkout "${branch}"
+	git checkout "${branch}" || usage "Failed to checkout ${branch}"
 
 elif [[ "${branch}" =~ ^te?mp ]]; then
 	echo -e "${S_CS} Creating temp branch... ${N_CS}" >&2
-	git checkout -b "${branch}"
+	git checkout -b "${branch}" || usage "Failed to checkout ${branch}"
 
 elif prompt "Create ${branch}"; then
 	echo -e "${S_CS} Creating new branch... ${N_CS}" >&2
-	git checkout -b "${branch}"
+	git checkout -b "${branch}" || usage "Failed to checkout ${branch}"
 	git push -u origin "${branch}"
 
 else
