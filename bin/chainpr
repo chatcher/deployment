@@ -17,7 +17,15 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-if ! has-staged-changes; then usage "Expected staged changes."; fi
+if ! has-staged-changes; then
+	echo -e "${W_CS} I don't see staged changes. ${N_CS}" >&2
+	if prompt 'Do you want to create a Pull Request from the current branch?'; then
+		createpr "$@"
+		exit
+	else
+		usage "Expected staged changes."
+	fi
+fi
 
 bodyfile="$(mktemp)"
 printf "%s\n\n" "${*}" > "${bodyfile}"
