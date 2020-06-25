@@ -37,6 +37,8 @@ usage() {
 
 initial="$(get-current-branch)"
 branch="${1:-$(get-repo-base-branch)}"
+sha="$(stash)"
+trap 'unstash "${sha}"' EXIT
 
 if [[ "${branch}" =~ ^[0-9]+$ ]]; then
 	pr_branch="$(get-pull-request "${branch}" | jq -r '.head' )"
