@@ -27,75 +27,11 @@ if ! has-staged-changes; then
 	fi
 fi
 
-bodyfile="$(mktemp)"
-printf "%s\n\n" "${*}" > "${bodyfile}"
-if [ -f 'PULL_REQUEST_TEMPLATE.md' ]; then cat 'PULL_REQUEST_TEMPLATE.md' >> "${bodyfile}"; fi
-nano "${bodyfile}"
+message="${*}"
 
-title="$(head -n 1 "${bodyfile}")"
-body="$(tail -n +2 "${bodyfile}" | sed -e '/./,$!d' | tr '\n' 'Ω' | sed -e 's/Ω/\\r\\n/g')"
-
-rm "${bodyfile}"
-
-message="$(generate-commit-message "${title}")"
-branch="$(generate-branch-name "${title}")"
-base="$(get-repo-base-branch)"
-draft='true'
-
-if [ -z "${title}" ]; then usage "Pull Request title is required."; fi
 if [ -z "${message}" ]; then usage "Could not derive commit message."; fi
-if [ -z "${branch}" ]; then usage "Could not derive branch name."; fi
-if [ -z "${base}" ]; then usage "Could not determine base branch."; fi
 
-# TODO: try to recover from this:
-if has-remote-branch "${branch}" && ! [ "${branch}" != "$(get-current-branch)" ]; then
-	usage "Branch already exists: '${branch}'"
-fi
-
-read -d '' -r data <<JSON || :
-{
-	"title": "${title}",
-	"base": "${base}",
-	"head": "${branch}",
-	"body": "${body}",
-	"draft": ${draft}
-}
-JSON
-
-echo "${data}" >&2
-
-if ! prompt 'Look good?'; then exit 1; fi
-
-if [ "${branch}" != "$(get-current-branch)" ]; then
-	git checkout -b "${branch}"
-fi
-
+git checkout -b "tmp/$(date +%s)"
 git commit -S -m "${message}" --no-verify
-git push -u origin "${branch}"
-auth_header="Authorization: bearer ${GITHUB_TOKEN}"
-accept_header='Accept: application/vnd.github.shadow-cat-preview+json'
-response="$(curl -H "${auth_header}" -H "${accept_header}" -d "${data}" "$(get-repo-api)/repos/$(get-repo-path)/pulls" -s)"
 
-prn="$(jq '.number' <<< "${response}")"
-user="$(jq -r '.user.login' <<< "${response}")"
-
-if [ -z "${prn}" ] || [ "${prn}" == 'null' ]; then
-	echo "${response}" >&2
-	echo "Something bad happened." >&2
-	exit 1
-fi
-
-link="$(get-pull-request-link "${prn}")"
-open "${link}"
-
-read -d '' -r data << JSON || :
-{
-	"assignees": [
-		"${user}"
-	]
-}
-JSON
-
-curl -H "Authorization: bearer ${GITHUB_TOKEN}" -d "${data}" "$(get-repo-api)/repos/$(get-repo-path)/issues/${prn}/assignees"
-
-echo -e "${L_CS}${link}{$N_CS}" >&2
+createpr "${message}"
