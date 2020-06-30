@@ -99,4 +99,4 @@ JSON
 
 curl -H "Authorization: bearer ${GITHUB_TOKEN}" -d "${data}" "$(get-repo-api)/repos/$(get-repo-path)/issues/${prn}/assignees"
 
-echo -e "${L_CS}${link}{$N_CS}" >&2
+echo -e "${L_CS}${link}${N_CS}" >&2
