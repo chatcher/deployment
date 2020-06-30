@@ -33,7 +33,7 @@ if [ -z "${message}" ]; then usage "Could not derive commit message."; fi
 
 branch="tmp/$(date +%s)"
 
-git checkout -b "${branch}"
+checkout "${branch}"
 git commit -S -m "${message}" --no-verify
 
 createpr "${message}"

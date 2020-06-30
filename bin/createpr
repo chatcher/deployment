@@ -68,7 +68,7 @@ echo "${data}" >&2
 if ! prompt 'Look good?'; then exit 1; fi
 
 if [ "${branch}" != "$(get-current-branch)" ]; then
-	git checkout -b "${branch}"
+	checkout "${branch}"
 fi
 
 # git commit -S -m "${message}" --no-verify
