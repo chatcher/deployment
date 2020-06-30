@@ -17,20 +17,20 @@ usage() {
 	exit 1
 }
 
-lint() {
+list() {
 	if [ -z "$(git diff --staged)" ]; then
-		git diff --name-only | xargs eslint
+		git diff --name-only | sed -E -e '/\.(js|ts)$/!d'
 	else
-		git diff --name-only --staged | xargs eslint
+		git diff --name-only --staged | sed -E -e '/\.(js|ts)$/!d'
 	fi
 }
 
+lint() {
+	list | xargs eslint
+}
+
 lint-fix() {
-	if [ -z "$(git diff --staged)" ]; then
-		git diff --name-only | xargs eslint --fix
-	else
-		git diff --name-only --staged | xargs eslint --fix
-	fi
+	list | xargs eslint --fix
 }
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
