@@ -20,7 +20,7 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-prn="${1}"
+prn="$(read-prn "${1}")"
 
 if [ -z "${prn}" ]; then read -p 'Pull Request Number: ' -r prn; fi
 if [ -z "${prn}" ]; then usage 'Okay, nevermind.'; fi
