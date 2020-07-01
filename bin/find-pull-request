@@ -18,7 +18,6 @@ if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
 branch="${1:-$(get-current-branch)}"
 
-
 while read -u 3 -r details; do
 	pr_branch="$(jq -r '.head' <<< "${details}")"
 	if [ "${branch}" == "${pr_branch}" ]; then
