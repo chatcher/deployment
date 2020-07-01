@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+set -e
+
+usage() {
+	echo "Look up the Pull Request Number for the specified branch." >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") [<branch>]" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+branch="${1:-$(get-current-branch)}"
+
+while read -u 3 -r details; do
+	pr_branch="$(jq -r '.head' <<< "${details}")"
+	if [ "${branch}" == "${pr_branch}" ]; then
+		jq -r '.number' <<< "${details}"
+		exit
+	fi
+done 3<<< "$(get-pull-request-list)"
+
+echo -e "${E_CS} No Pull Request found. ${N_CS}" >&2
+exit 1
