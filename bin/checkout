@@ -66,10 +66,12 @@ elif [[ "${branch}" =~ ^te?mp ]] || [[ "${branch}" =~ ^local ]]; then
 	echo -e "${S_CS} Creating temp branch... ${N_CS}" >&2
 	git checkout -b "${branch}" || usage "Failed to checkout ${branch}"
 
-elif prompt "Create ${branch}"; then
+elif prompt "Create branch? ${branch}"; then
 	echo -e "${S_CS} Creating new branch... ${N_CS}" >&2
 	git checkout -b "${branch}" || usage "Failed to checkout ${branch}"
-	git push -u origin "${branch}"
+	if prompt "Push to remote?"; then
+		git push -u origin "${branch}"
+	fi
 
 else
 	usage 'Well, nevermind then.'
