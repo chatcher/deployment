@@ -62,7 +62,7 @@ elif has-remote-branch  "${branch}"; then
 	echo -e "${S_CS} Checking out remote branch... ${N_CS}" >&2
 	git checkout "${branch}" || usage "Failed to checkout ${branch}"
 
-elif [[ "${branch}" =~ ^te?mp ]]; then
+elif [[ "${branch}" =~ ^te?mp ]] || [[ "${branch}" =~ ^local ]]; then
 	echo -e "${S_CS} Creating temp branch... ${N_CS}" >&2
 	git checkout -b "${branch}" || usage "Failed to checkout ${branch}"
 
