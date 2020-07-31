@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+set -e
+
+usage() {
+	echo "Run 'git fetch', 'git status', and 'git branch' in sequence." >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}")" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+line() {
+	msg="${1}"
+	echo -e "${S_CS}----------------------------------------------------------------${N_CS}"
+	if [ -n "${msg}" ]; then
+		echo -e "${K_CS}    ${msg}${N_CS}"
+	fi
+}
+
+line 'git fetch' >&2
+git fetch >&2
+line 'git status'>&2
+git status >&2
+line 'git branch' >&2
+git branch >&2
+line >&2
