@@ -34,7 +34,7 @@ if [ -f 'PULL_REQUEST_TEMPLATE.md' ]; then cat 'PULL_REQUEST_TEMPLATE.md' >> "${
 nano "${bodyfile}"
 
 title="$(head -n 1 "${bodyfile}")"
-body="$(tail -n +2 "${bodyfile}" | sed -e '/./,$!d' | tr '\n' 'Ω' | sed -e 's/Ω/\\r\\n/g')"
+body="$(tail -n +2 "${bodyfile}" | sed -e '/./,$!d' | tr '\n' 'Ω' | sed -e 's/Ω/\\r\\n/g' | sed -e 's/"/\\"/g')"
 
 rm "${bodyfile}"
 
