@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+
+usage() {
+	echo "Run the current project based on contents of package.json" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <cmd>" >&2
+	echo >&2
+	echo "cmd:" >&2
+	echo "  host  Run and host the project (default)" >&2
+	echo "  test  Run test suites instead" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi >&2
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+filename='package.json'
+
+while ! [ -f "${filename}" ] && [ "$(pwd)" != '/' ]; do
+	cd ..
+done
+
+if ! [ -f "${filename}" ]; then
+	usage "No ${filename} directory found in path; better luck next time."
+fi
+
+mode="${1:-host}"
+
+if [ "${mode}" = 'host' ]; then
+	if [ "$(jq -rc '.scripts.dev' package.json)" != 'null' ]; then
+		npm run dev
+
+	elif [ "$(jq -rc '.scripts.start' package.json)" != 'null' ]; then
+		npm start
+
+	else
+		usage 'I dunno how host'
+	fi
+
+elif [ "${mode}" = 'test' ]; then
+	cmd="$(jq -rc '.scripts.test' package.json)"
+
+	if [ "${cmd}" = 'ng test' ]; then
+		ng test --watch=true --code-coverage --source-map
+
+	elif [[ "${cmd}" =~ mocha ]]; then
+		export NODE_ENV=UNIT_TEST
+		export LOG_LEVEL=info
+		npx nyc --reporter=lcov npx mocha --recursive server/tests --diff -w --watch-files server,common
+
+	elif [ "${cmd}" = 'null' ]; then
+		usage 'I dunno how test'
+
+	else
+		echo -e "${A_CS}Maybe it's like:${N_CS}" >&2
+		echo "${cmd}" >&2
+		echo -e "${E_CS}but I'm not sure.${N_CS}" >&2
+	fi
+
+else
+	usage "I dunno how $mode"
+fi
+
+echo -e "${S_CS}Okay, all done.${N_CS}" >&2
