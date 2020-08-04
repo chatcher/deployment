@@ -18,9 +18,7 @@ nvm install 12
 
 echo
 echo "Configuring some stuff"
-mkdir .ssh && chmod 700 .ssh && ssh-keygen
-cat .ssh/*pub
 git config --global user.name "Chad Hatcher"
 git config --global user.email "hackenslacker@gmail.com"
-gpg --full-generate-key
-gpg --list-secret-keys --keyid-format LONG
+mkdir .ssh && chmod 700 .ssh && ssh-keygen
+cat .ssh/*pub
