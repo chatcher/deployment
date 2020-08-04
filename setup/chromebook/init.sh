@@ -4,11 +4,11 @@ set -x
 
 echo "Installing a bunch of stuff"
 sudo apt update
-sudo apt install nmap
-sudo apt install nano
-sudo apt install git
-sudo apt install gnupg
-sudo apt install jq
+sudo apt install -y nmap
+sudo apt install -y nano
+sudo apt install -y git
+sudo apt install -y gnupg
+sudo apt install -y jq
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
 
 # this might fail because nvm might not be available in the current shell
