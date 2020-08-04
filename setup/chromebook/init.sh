@@ -9,6 +9,7 @@ sudo apt install -y nano
 sudo apt install -y git
 sudo apt install -y gnupg
 sudo apt install -y jq
+sudo apt install -y dnsutils
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
 
 # this might fail because nvm might not be available in the current shell
