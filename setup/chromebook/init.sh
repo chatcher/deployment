@@ -14,6 +14,7 @@ sudo apt install -y git
 sudo apt install -y gnupg
 sudo apt install -y jq
 sudo apt install -y dnsutils
+sudo apt install -y rsync
 sudo apt install -y whois
 sudo apt install -y sublime-text
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
