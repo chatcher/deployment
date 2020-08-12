@@ -31,38 +31,59 @@ fi
 mode="${1:-host}"
 
 if [ "${mode}" = 'host' ]; then
-	if [ "$(jq -rc '.scripts.dev' package.json)" != 'null' ]; then
+	dev_script="$(jq -rc '.scripts.dev' package.json)"
+	start_script="$(jq -rc '.scripts.start' package.json)"
+
+	if [[ "${dev_script}" =~ nodemon ]]; then
+		echo -e "${S_CS} Hosting via nodemon ${N_CS}" >&2
+		node_env="${NODE_ENV}"
+		log_level="${LOG_LEVEL}"
+		export NODE_ENV=dev1
+		export LOG_LEVEL=debug
+		npx nodemon server/server.js --watch common --watch server
+		export NODE_ENV="${node_env}"
+		export LOG_LEVEL="${log_level}"
+
+	elif [ "${dev_script}" != 'null' ]; then
+		echo -e "${S_CS} Hosting via dev script ${N_CS}" >&2
 		npm run dev
 
-	elif [ "$(jq -rc '.scripts.start' package.json)" != 'null' ]; then
+	elif [ "${start_script}" != 'null' ]; then
+		echo -e "${S_CS} Hosting via npm start ${N_CS}" >&2
 		npm start
 
 	else
 		usage 'I dunno how host'
 	fi
 
-elif [ "${mode}" = 'test' ]; then
+elif [[ "${mode}" =~ tests? ]]; then
 	cmd="$(jq -rc '.scripts.test' package.json)"
 
 	if [ "${cmd}" = 'ng test' ]; then
+		echo -e "${S_CS} Testing via ng test ${N_CS}" >&2
 		ng test --watch=true --code-coverage --source-map
 
 	elif [[ "${cmd}" =~ mocha ]]; then
+		echo -e "${S_CS} Testing via nyc mocha ${N_CS}" >&2
+		node_env="${NODE_ENV}"
+		log_level="${LOG_LEVEL}"
 		export NODE_ENV=UNIT_TEST
-		export LOG_LEVEL=info
+		export LOG_LEVEL=warn
 		npx nyc --reporter=lcov npx mocha --recursive server/tests --diff -w --watch-files server,common
+		export NODE_ENV="${node_env}"
+		export LOG_LEVEL="${log_level}"
 
 	elif [ "${cmd}" = 'null' ]; then
 		usage 'I dunno how test'
 
 	else
-		echo -e "${A_CS}Maybe it's like:${N_CS}" >&2
+		echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
 		echo "${cmd}" >&2
-		echo -e "${E_CS}but I'm not sure.${N_CS}" >&2
+		echo -e "${E_CS}but I'm not sure. ${N_CS}" >&2
 	fi
 
 else
-	usage "I dunno how $mode"
+	usage "I dunno how to $mode"
 fi
 
-echo -e "${S_CS}Okay, all done.${N_CS}" >&2
+echo -e "${S_CS} Okay, all done. ${N_CS}" >&2
