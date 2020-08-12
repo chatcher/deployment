@@ -68,6 +68,7 @@ if [ -z "${db_user}" ]; then usage 'Failed to figure out a database variable for
 if [ -z "${db_pass}" ]; then usage 'Failed to figure out a database variable for the pass.'; fi
 if [ -z "${db_name}" ]; then usage 'Failed to figure out a database variable for the name.'; fi
 
+
 # 1800 seconds is half an hour
 (sleep 1800; kill -15 -$$) &
 killer=$!
