@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+
+set -e
+# set -x
+
+usage() {
+	echo "Describe the specified table and write to file in sql/{<db_id>}/tables/{schema}/{table}.txt" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <db_id> <schema> <table>" >&2
+	echo >&2
+	echo "parameters:" >&2
+	echo "  db_id" >&2
+	echo "        The type of database to run the query against. E.g. 'oracle'" >&2
+	echo "  schema" >&2
+	echo "        The name of the database to run the query in. E.g. 'common'" >&2
+	echo "  table" >&2
+	echo "        The name of the table to describe" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+
+db_id="${1}"
+schema="${2}"
+table="${3}"
+
+if [ -z "${3}" ]; then
+	# schema and table were (presumably) provided in dotted format
+	schema="${2%.*}"
+	table="${2#*.}"
+fi
+
+if [ -z "${db_id}" ]; then usage 'Database identifier required'; fi
+if [ -z "${schema}" ]; then usage 'Schema name required'; fi
+if [ -z "${table}" ]; then usage 'Table name required'; fi
+
+schema="$(tr '[:lower:]' '[:upper:]' <<< "${schema}")"
+table="$(tr '[:lower:]' '[:upper:]' <<< "${table}")"
+
+
+db_host=
+db_port=
+db_user=
+db_pass=
+db_name=
+while read -u 3 -r line; do
+	if [[ "${line}" =~ ^[a-zA-Z0-9._-]+= ]]; then
+		var="${line%=*}"
+		val="${line#*=}"
+
+		if [[ "${val}" =~ $db_id ]] && [[ "${var}" =~ HOST ]]; then
+			# Found what looks like a database host
+			db_host="${var}"
+		fi
+	fi
+done 3<<< "$(env)"
+
+if [ -z "${db_host}" ]; then usage 'Failed to figure out a database variable for the host.'; fi
+
+# db_host="${db_host}"
+db_port="${db_host/HOST/PORT}"
+db_user="${db_host/HOST/USER}"
+db_pass="${db_host/HOST/PASSWORD}"
+db_name="${db_host/HOST/DATABASE}"
+
+if [ -z "${db_port}" ]; then usage 'Failed to figure out a database variable for the port.'; fi
+if [ -z "${db_user}" ]; then usage 'Failed to figure out a database variable for the user.'; fi
+if [ -z "${db_pass}" ]; then usage 'Failed to figure out a database variable for the pass.'; fi
+if [ -z "${db_name}" ]; then usage 'Failed to figure out a database variable for the name.'; fi
+
+
+cd "sql/${db_id}" || usage "Failed to cd into ${db_id} directory."
+mkdir -p "tables/${schema}"
+
+echo "${schema}.${table}" | tee "tables/${schema}/${table}.txt"
+
+if [ "${db_id}" == 'oracle' ]; then
+	oracle='/Users/chad.hatcher/sqlcl/bin/sql'
+	login="${!db_user}/${!db_pass}@//${!db_host}:${!db_port}/${!db_name}"
+
+	$oracle -S -L "${login}" \
+		>> "tables/${schema}/${table}.txt" \
+		<<SQL
+describe ${schema}.${table};
+select count(*) from ${schema}.${table};
+SQL
+
+elif [ "${db_id}" == 'aurora' ]; then
+	get_count="SELECT TABLE_ROWS as APPROX_ROWS FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='${schema}' AND TABLE_NAME='${table}'"
+
+	mysql -A --table \
+		"--host=${!db_host}" \
+		"--port=${!db_port}" \
+		"--user=${!db_user}" \
+		"--password=${!db_pass}" \
+		"--database=${!db_name}" \
+		>> "tables/${schema}/${table}.txt" \
+		<<< "describe ${schema}.${table}; ${get_count}; SHOW CREATE TABLE ${schema}.${table};"
+
+else
+	usage "Unsupported database: '${db_id}'."
+fi
