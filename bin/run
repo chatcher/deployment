@@ -35,6 +35,8 @@ if [ "${mode}" = 'host' ]; then
 	start_script="$(jq -rc '.scripts.start' package.json)"
 
 	if [[ "${dev_script}" =~ nodemon ]]; then
+		clear
+		clear
 		echo -e "${S_CS} Hosting via nodemon ${N_CS}" >&2
 		node_env="${NODE_ENV}"
 		log_level="${LOG_LEVEL}"
@@ -45,10 +47,14 @@ if [ "${mode}" = 'host' ]; then
 		export LOG_LEVEL="${log_level}"
 
 	elif [ "${dev_script}" != 'null' ]; then
+		clear
+		clear
 		echo -e "${S_CS} Hosting via dev script ${N_CS}" >&2
 		npm run dev
 
 	elif [ "${start_script}" != 'null' ]; then
+		clear
+		clear
 		echo -e "${S_CS} Hosting via npm start ${N_CS}" >&2
 		npm start
 
@@ -60,10 +66,14 @@ elif [[ "${mode}" =~ tests? ]]; then
 	cmd="$(jq -rc '.scripts.test' package.json)"
 
 	if [ "${cmd}" = 'ng test' ]; then
+		clear
+		clear
 		echo -e "${S_CS} Testing via ng test ${N_CS}" >&2
 		ng test --watch=true --code-coverage --source-map
 
 	elif [[ "${cmd}" =~ mocha ]]; then
+		clear
+		clear
 		echo -e "${S_CS} Testing via nyc mocha ${N_CS}" >&2
 		node_env="${NODE_ENV}"
 		log_level="${LOG_LEVEL}"
