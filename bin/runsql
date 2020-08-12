@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+
+set -e
+# set -x
+
+usage() {
+	echo "For the specified DB, run the specified SQL query" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <db_id> <sql_file> [<key>=<value>, ...]" >&2
+	echo >&2
+	echo "parameters:" >&2
+	echo "  db_id" >&2
+	echo "        The name of the database to run the query against. E.g. 'oracle'" >&2
+	echo "  sql_file" >&2
+	echo "        The filename of the query to run." >&2
+	echo "  key=value" >&2
+	echo "        Arbitrary key-value data to provide to the query, such as IDs." >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+# if [ -z "${1}" ]; then usage 'Database identifier required'; fi
+# if [ -z "${2}" ]; then usage 'SQL Script name required'; fi
+
+db_id="${1}"
+sql_file="${2}"
+
+db_host=
+db_port=
+db_user=
+db_pass=
+db_name=
+while read -u 3 -r line; do
+	if [[ "${line}" =~ ^[a-zA-Z0-9._-]+= ]]; then
+		var="${line%=*}"
+		val="${line#*=}"
+
+		if [[ "${val}" =~ $db_id ]] && [[ "${var}" =~ HOST ]]; then
+			# Found what looks like a database host
+			db_host="${var}"
+		fi
+	fi
+done 3<<< "$(env)"
+
+if [ -z "${db_host}" ]; then usage 'Failed to figure out a database variable for the host.'; fi
+
+# db_host="${db_host}"
+db_port="${db_host/HOST/PORT}"
+db_user="${db_host/HOST/USER}"
+db_pass="${db_host/HOST/PASSWORD}"
+db_name="${db_host/HOST/DATABASE}"
+
+# echo "Okay, here's what I got:" >&2
+# echo "    HOST: ${!db_host}" >&2
+# echo "    PORT: ${!db_port}" >&2
+# echo "    USER: ${!db_user}" >&2
+# echo "    PASS: ${!db_pass}" >&2
+# echo "DATABASE: ${!db_name}" >&2
+
+if [ -z "${db_port}" ]; then usage 'Failed to figure out a database variable for the port.'; fi
+if [ -z "${db_user}" ]; then usage 'Failed to figure out a database variable for the user.'; fi
+if [ -z "${db_pass}" ]; then usage 'Failed to figure out a database variable for the pass.'; fi
+if [ -z "${db_name}" ]; then usage 'Failed to figure out a database variable for the name.'; fi
+
+# 1800 seconds is half an hour
+(sleep 1800; kill -15 -$$) &
+killer=$!
+trap "kill -9 '${killer}' 2>/dev/null" EXIT
+
+cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id}" || usage "Failed to cd into ${db_id} directory."
+
+if [ "${db_id}" == 'oracle' ]; then
+	oracle='/Users/chad.hatcher/sqlcl/bin/sql'
+	login="${!db_user}/${!db_pass}@//${!db_host}:${!db_port}/${!db_name}"
+
+	if [ -z "${sql_file}" ]; then
+		echo -e "${S_CS} Connecting to database... ${N_CS}" >&2
+		$oracle -L "${login}"
+
+	elif [ ! -f "sql/${sql_file}.sql" ]; then
+		echo -e "${S_CS} You said: ${N_CS}" >&2
+		echo -e "${W_CS} ${sql_file} ${N_CS}" >&2
+		if prompt 'Execute that as a query?'; then
+			$oracle -L "${login}" <<SQL
+SET SQLFORMAT ANSICONSOLE;
+SET SQLBLANKLINES ON;
+${sql_file};
+SQL
+		else
+			usage "I don't see a sql script called ${sql_file}"
+		fi
+
+	elif [ -f "sql/${sql_file}.dat" ]; then
+		echo -E "${S_CS} Executing SQL file with data file... ${N_CS}" >&2
+		$oracle -S -L "${login}" "@sql/${sql_file}.sql" <"sql/${sql_file}.dat"
+
+	else
+		echo -E "${S_CS} Executing SQL file... ${N_CS}" >&2
+		$oracle -S -L "${login}" "@sql/${sql_file}.sql" </dev/null
+
+	fi
+
+elif [ "${db_id}" == 'aurora' ]; then
+	if [ -z "${sql_file}" ]; then
+		echo -e "${S_CS} Connecting to database... ${N_CS}" >&2
+		mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" "--database=${!db_name}"
+
+	elif [ ! -f "sql/${sql_file}.sql" ]; then
+		echo -e "${S_CS} You said: ${N_CS}" >&2
+		echo -e "${W_CS} ${sql_file} ${N_CS}" >&2
+		if prompt 'Execute that as a query?'; then
+			mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" "--database=${!db_name}" <<<"${sql_file};"
+		else
+			usage "I don't see a sql script called ${sql_file}"
+		fi
+
+	else
+		echo -E "${S_CS} Executing SQL file... ${N_CS}" >&2
+		mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" "--database=${!db_name}" <"sql/${sql_file}.sql"
+	fi
+
+else
+	usage "Unsupported database: '${db_id}'."
+fi
