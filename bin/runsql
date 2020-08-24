@@ -3,6 +3,40 @@
 set -e
 # set -x
 
+gather_env_vars() {
+	while read -u 3 -r line; do
+		if [[ "${line}" =~ ^[a-zA-Z0-9._-]+= ]]; then
+			var="${line%=*}"
+			val="${line#*=}"
+
+			if [[ "${val}" =~ $db_id ]] && [[ "${var}" =~ HOST ]]; then
+				# Found what looks like a database host
+				db_host="${var}"
+			fi
+		fi
+	done 3<<< "$(env)"
+
+	if [ -z "${db_host}" ]; then usage 'Failed to figure out a database variable for the host.'; fi
+
+	# db_host="${db_host}"
+	db_port="${db_host/HOST/PORT}"
+	db_user="${db_host/HOST/USER}"
+	db_pass="${db_host/HOST/PASSWORD}"
+	db_name="${db_host/HOST/DATABASE}"
+
+	# echo "Okay, here's what I got:" >&2
+	# echo "    HOST: ${!db_host}" >&2
+	# echo "    PORT: ${!db_port}" >&2
+	# echo "    USER: ${!db_user}" >&2
+	# echo "    PASS: ${!db_pass}" >&2
+	# echo "DATABASE: ${!db_name}" >&2
+
+	if [ -z "${db_port}" ]; then usage 'Failed to figure out a database variable for the port.'; fi
+	if [ -z "${db_user}" ]; then usage 'Failed to figure out a database variable for the user.'; fi
+	if [ -z "${db_pass}" ]; then usage 'Failed to figure out a database variable for the pass.'; fi
+	if [ -z "${db_name}" ]; then usage 'Failed to figure out a database variable for the name.'; fi
+}
+
 usage() {
 	echo "For the specified DB, run the specified SQL query" >&2
 	echo >&2
@@ -36,47 +70,17 @@ db_port=
 db_user=
 db_pass=
 db_name=
-while read -u 3 -r line; do
-	if [[ "${line}" =~ ^[a-zA-Z0-9._-]+= ]]; then
-		var="${line%=*}"
-		val="${line#*=}"
-
-		if [[ "${val}" =~ $db_id ]] && [[ "${var}" =~ HOST ]]; then
-			# Found what looks like a database host
-			db_host="${var}"
-		fi
-	fi
-done 3<<< "$(env)"
-
-if [ -z "${db_host}" ]; then usage 'Failed to figure out a database variable for the host.'; fi
-
-# db_host="${db_host}"
-db_port="${db_host/HOST/PORT}"
-db_user="${db_host/HOST/USER}"
-db_pass="${db_host/HOST/PASSWORD}"
-db_name="${db_host/HOST/DATABASE}"
-
-# echo "Okay, here's what I got:" >&2
-# echo "    HOST: ${!db_host}" >&2
-# echo "    PORT: ${!db_port}" >&2
-# echo "    USER: ${!db_user}" >&2
-# echo "    PASS: ${!db_pass}" >&2
-# echo "DATABASE: ${!db_name}" >&2
-
-if [ -z "${db_port}" ]; then usage 'Failed to figure out a database variable for the port.'; fi
-if [ -z "${db_user}" ]; then usage 'Failed to figure out a database variable for the user.'; fi
-if [ -z "${db_pass}" ]; then usage 'Failed to figure out a database variable for the pass.'; fi
-if [ -z "${db_name}" ]; then usage 'Failed to figure out a database variable for the name.'; fi
-
 
 # 1800 seconds is half an hour
 (sleep 1800; kill -15 -$$) &
 killer=$!
 trap "kill -9 '${killer}' 2>/dev/null" EXIT
 
-cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id}" || usage "Failed to cd into ${db_id} directory."
 
-if [ "${db_id}" == 'oracle' ]; then
+if [[ "${db_id}" =~ oracle ]]; then
+	cd "$(dirname "${BASH_SOURCE[0]}")/sql/oracle" || usage "Failed to cd into ${db_id} directory."
+	gather_env_vars
+
 	oracle='/Users/chad.hatcher/sqlcl/bin/sql'
 	login="${!db_user}/${!db_pass}@//${!db_host}:${!db_port}/${!db_name}"
 
@@ -107,7 +111,10 @@ SQL
 
 	fi
 
-elif [ "${db_id}" == 'aurora' ]; then
+elif [[ "${db_id}" =~ aurora ]]; then
+	cd "$(dirname "${BASH_SOURCE[0]}")/sql/aurora" || usage "Failed to cd into ${db_id} directory."
+	gather_env_vars
+
 	if [ -z "${sql_file}" ]; then
 		echo -e "${S_CS} Connecting to database... ${N_CS}" >&2
 		mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" "--database=${!db_name}"
@@ -127,5 +134,29 @@ elif [ "${db_id}" == 'aurora' ]; then
 	fi
 
 else
-	usage "Unsupported database: '${db_id}'."
+	as_oracle=false
+	as_aurora=false
+
+	if [ -e "$(dirname "${BASH_SOURCE[0]}")/sql/oracle/sql/${db_id}.sql" ]; then
+		as_oracle=true
+	fi
+
+	if [ -e "$(dirname "${BASH_SOURCE[0]}")/sql/aurora/sql/${db_id}.sql" ]; then
+		as_aurora=true
+	fi
+
+	if $as_oracle && $as_aurora; then
+		usage "Please specify a database in order to run '${db_id}'."
+
+	elif $as_oracle; then
+		echo -e "${I_CS} Switching to Oracle ${N_CS}" >&2
+		${BASH_SOURCE[0]} 'oracle' "$@"
+
+	elif $as_aurora && ! $as_oracle; then
+		echo -e "${I_CS} Switching to Aurora ${N_CS}" >&2
+		${BASH_SOURCE[0]} 'aurora' "$@"
+
+	else
+		usage "Unknown database: '${db_id}'."
+	fi
 fi
