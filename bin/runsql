@@ -98,11 +98,11 @@ SQL
 		fi
 
 	elif [ -f "sql/${sql_file}.dat" ]; then
-		echo -E "${S_CS} Executing SQL file with data file... ${N_CS}" >&2
+		echo -e "${S_CS} Executing SQL file with data file... ${N_CS}" >&2
 		$oracle -S -L "${login}" "@sql/${sql_file}.sql" <"sql/${sql_file}.dat"
 
 	else
-		echo -E "${S_CS} Executing SQL file... ${N_CS}" >&2
+		echo -e "${S_CS} Executing SQL file... ${N_CS}" >&2
 		$oracle -S -L "${login}" "@sql/${sql_file}.sql" </dev/null
 
 	fi
@@ -122,7 +122,7 @@ elif [ "${db_id}" == 'aurora' ]; then
 		fi
 
 	else
-		echo -E "${S_CS} Executing SQL file... ${N_CS}" >&2
+		echo -e "${S_CS} Executing SQL file... ${N_CS}" >&2
 		mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" "--database=${!db_name}" <"sql/${sql_file}.sql"
 	fi
 
