@@ -32,7 +32,6 @@ line 'git status'>&2
 git status >&2
 line 'git branch' >&2
 git branch >&2
-line >&2
 line 'pull requests' >&2
 listprs >&2
 line >&2
