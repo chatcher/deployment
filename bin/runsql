@@ -4,14 +4,28 @@ set -e
 # set -x
 
 gather_env_vars() {
+	re="$(sed -E -e 's/[^a-z]/./g' <<< "${db_id}" | tr '[:lower:]' '[:upper:]')"
+
 	while read -u 3 -r line; do
 		if [[ "${line}" =~ ^[a-zA-Z0-9._-]+= ]]; then
 			var="${line%=*}"
 			val="${line#*=}"
 
-			if [[ "${val}" =~ $db_id ]] && [[ "${var}" =~ HOST ]]; then
+			if [[ "${var}" =~ HOST ]] && [[ "${val}" =~ $db_id ]]; then
+				# echo -e "${D_CS} '${var}' = '${val}' ${N_CS}" >&2
+
 				# Found what looks like a database host
-				db_host="${var}"
+				if [ -z "${db_host}" ]; then
+					# echo -e "${D_CS} using that ${N_CS}" >&2
+					db_host="${var}"
+				elif [[ "${var}" =~ $re ]]; then
+					# echo -e "${D_CS} switching ${N_CS}" >&2
+					db_host="${var}"
+				else
+					# but we already have one picked out
+					# echo -e "${D_CS} skipping that ${N_CS}" >&2
+					:
+				fi
 			fi
 		fi
 	done 3<<< "$(env)"
@@ -24,17 +38,23 @@ gather_env_vars() {
 	db_pass="${db_host/HOST/PASSWORD}"
 	db_name="${db_host/HOST/DATABASE}"
 
-	# echo "Okay, here's what I got:" >&2
-	# echo "    HOST: ${!db_host}" >&2
-	# echo "    PORT: ${!db_port}" >&2
-	# echo "    USER: ${!db_user}" >&2
-	# echo "    PASS: ${!db_pass}" >&2
-	# echo "DATABASE: ${!db_name}" >&2
-
 	if [ -z "${db_port}" ]; then usage 'Failed to figure out a database variable for the port.'; fi
 	if [ -z "${db_user}" ]; then usage 'Failed to figure out a database variable for the user.'; fi
 	if [ -z "${db_pass}" ]; then usage 'Failed to figure out a database variable for the pass.'; fi
 	if [ -z "${db_name}" ]; then usage 'Failed to figure out a database variable for the name.'; fi
+
+
+	if [ -z "${!db_host}" ]; then usage "Picked up ${db_host} for the host, but it has no value.'"; fi
+	if [ -z "${!db_port}" ]; then usage "Picked up ${db_port} for the port, but it has no value.'"; fi
+	if [ -z "${!db_user}" ]; then usage "Picked up ${db_user} for the user, but it has no value.'"; fi
+	if [ -z "${!db_pass}" ]; then usage "Picked up ${db_pass} for the pass, but it has no value.'"; fi
+	if [ -z "${!db_name}" ]; then usage "Picked up ${db_name} for the name, but it has no value.'"; fi
+
+	echo -e "${K_CS} Using ${db_host} = ${!db_host} ${N_CS}" >&2
+	echo -e "${K_CS} Using ${db_port} = ${!db_port} ${N_CS}" >&2
+	echo -e "${K_CS} Using ${db_user} = ${!db_user} ${N_CS}" >&2
+	echo -e "${K_CS} Using ${db_pass} = ${!db_pass} ${N_CS}" >&2
+	echo -e "${K_CS} Using ${db_name} = ${!db_name} ${N_CS}" >&2
 }
 
 usage() {
