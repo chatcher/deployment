@@ -24,14 +24,19 @@ line() {
 	fi
 }
 
-line 'pull request' >&2
-get-pull-request-number || echo 'none'
 line 'git fetch' >&2
 git fetch >&2
+
 line 'git status'>&2
-git status >&2
+git status -bs >&2
+
 line 'git branch' >&2
 git branch >&2
+
 line 'pull requests' >&2
 listprs >&2
+
+line 'pull request' >&2
+get-pull-request-number || echo 'none'
+
 line >&2
