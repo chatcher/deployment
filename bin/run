@@ -7,8 +7,9 @@ usage() {
 	echo "  $(basename "${0}") <cmd>" >&2
 	echo >&2
 	echo "cmd:" >&2
-	echo "  host  Run and host the project (default)" >&2
-	echo "  test  Run test suites instead" >&2
+	echo "  serve  Run and host the project (default)" >&2
+	echo "  test   Run test suites; and watch for file changes" >&2
+	echo "  cover  Run test suites just for code coverage" >&2
 	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi >&2
@@ -28,9 +29,9 @@ if ! [ -f "${filename}" ]; then
 	usage "No ${filename} directory found in path; better luck next time."
 fi
 
-mode="${1:-host}"
+mode="${1:-serve}"
 
-if [ "${mode}" = 'host' ]; then
+if [[ "${mode}" =~ serve ]]; then
 	dev_script="$(jq -rc '.scripts.dev' package.json)"
 	start_script="$(jq -rc '.scripts.start' package.json)"
 
@@ -62,7 +63,7 @@ if [ "${mode}" = 'host' ]; then
 		usage 'I dunno how host'
 	fi
 
-elif [[ "${mode}" =~ tests? ]]; then
+elif [[ "${mode}" =~ test ]]; then
 	cmd="$(jq -rc '.scripts.test' package.json)"
 
 	if [ "${cmd}" = 'ng test' ]; then
@@ -80,6 +81,36 @@ elif [[ "${mode}" =~ tests? ]]; then
 		export NODE_ENV=UNIT_TEST
 		export LOG_LEVEL=warn
 		npx nyc --reporter=lcov npx mocha --recursive server/tests --diff -w --watch-files server,common
+		export NODE_ENV="${node_env}"
+		export LOG_LEVEL="${log_level}"
+
+	elif [ "${cmd}" = 'null' ]; then
+		usage 'I dunno how test'
+
+	else
+		echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
+		echo "${cmd}" >&2
+		echo -e "${E_CS}but I'm not sure. ${N_CS}" >&2
+	fi
+
+elif [[ "${mode}" =~ cover ]]; then
+	cmd="$(jq -rc '.scripts.test' package.json)"
+
+	if [ "${cmd}" = 'ng test' ]; then
+		clear
+		clear
+		echo -e "${S_CS} Testing via ng test ${N_CS}" >&2
+		ng test --watch=false --code-coverage --source-map
+
+	elif [[ "${cmd}" =~ mocha ]]; then
+		clear
+		clear
+		echo -e "${S_CS} Testing via nyc mocha ${N_CS}" >&2
+		node_env="${NODE_ENV}"
+		log_level="${LOG_LEVEL}"
+		export NODE_ENV=UNIT_TEST
+		export LOG_LEVEL=warn
+		npx nyc --reporter=lcov npx mocha --recursive server/tests --diff
 		export NODE_ENV="${node_env}"
 		export LOG_LEVEL="${log_level}"
 
