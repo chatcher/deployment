@@ -82,8 +82,9 @@ if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 # if [ -z "${1}" ]; then usage 'Database identifier required'; fi
 # if [ -z "${2}" ]; then usage 'SQL Script name required'; fi
 
-db_id="${1}"
-sql_file="${2}"
+db_id="${1}";
+sql_file="${2}";
+shift 2
 
 db_host=
 db_port=
@@ -135,6 +136,12 @@ elif [[ "${db_id}" =~ aurora ]]; then
 	cd "$(dirname "${BASH_SOURCE[0]}")/sql/aurora" || usage "Failed to cd into ${db_id} directory."
 	gather_env_vars
 
+	variables=""
+	while (( $# > 0 )); do
+		variables="set @$(sed -E -e "s/=(.*)/='\1'/" <<< "${1}"); ${variables}"
+		shift
+	done
+
 	if [ -z "${sql_file}" ]; then
 		echo -e "${S_CS} Connecting to database... ${N_CS}" >&2
 		mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" "--database=${!db_name}"
@@ -148,9 +155,13 @@ elif [[ "${db_id}" =~ aurora ]]; then
 			usage "I don't see a sql script called ${sql_file}"
 		fi
 
-	else
+	elif [ -z "${variables}" ]; then
 		echo -e "${S_CS} Executing SQL file... ${N_CS}" >&2
 		mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" "--database=${!db_name}" <"sql/${sql_file}.sql"
+
+	else
+		echo -e "${S_CS} Executing SQL script with variables... ${N_CS}" >&2
+		mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" "--database=${!db_name}" -e "${variables} source sql/${sql_file}.sql;"
 	fi
 
 else
