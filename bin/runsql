@@ -84,7 +84,7 @@ if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
 db_id="${1}";
 sql_file="${2}";
-shift 2
+shift 2 || :
 
 db_host=
 db_port=
