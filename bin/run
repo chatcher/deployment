@@ -66,15 +66,16 @@ if [[ "${mode}" =~ default ]]; then
 		log_level="${LOG_LEVEL}"
 		export NODE_ENV=dev1
 		export LOG_LEVEL=debug
-		npx nodemon server/server.js --watch common --watch server
+		# npx nodemon server/server.js --watch common --watch server
+		$npx nodemon "./${main_script}" "${watch_dirs[@]}"
 		export NODE_ENV="${node_env}"
 		export LOG_LEVEL="${log_level}"
 
-	elif [ "${dev_script}" != 'null' ]; then
-		clear
-		clear
-		echo -e "${S_CS} Hosting via dev script ${N_CS}" >&2
-		npm run dev
+	# elif [ "${dev_script}" != 'null' ]; then
+	# 	clear
+	# 	clear
+	# 	echo -e "${S_CS} Running dev script ${N_CS}" >&2
+	# 	npm run dev
 
 	elif [ "${start_script}" != 'null' ]; then
 		clear
@@ -103,7 +104,8 @@ elif [[ "${mode}" =~ test ]]; then
 		log_level="${LOG_LEVEL}"
 		export NODE_ENV=UNIT_TEST
 		export LOG_LEVEL=warn
-		npx nyc --reporter=lcov npx mocha --recursive server/tests --diff -w --watch-files server,common
+		# npx nyc --reporter=lcov npx mocha --recursive server/tests --diff -w --watch-files server,common
+		$npx nyc --reporter=lcov "${npx}" mocha --recursive "${test_path}" -w --watch-files "${watch_dir}"
 		export NODE_ENV="${node_env}"
 		export LOG_LEVEL="${log_level}"
 
@@ -131,7 +133,8 @@ elif [[ "${mode}" =~ cover ]]; then
 		log_level="${LOG_LEVEL}"
 		export NODE_ENV=UNIT_TEST
 		export LOG_LEVEL=warn
-		npx nyc --reporter=lcov npx mocha --recursive server/tests --diff
+		# npx nyc --reporter=lcov npx mocha --recursive server/tests --diff
+		$npx nyc --reporter=lcov "${npx}" mocha --exit --recursive "${test_path}"
 		export NODE_ENV="${node_env}"
 		export LOG_LEVEL="${log_level}"
 
