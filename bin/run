@@ -4,12 +4,12 @@ usage() {
 	echo "Run the current project based on contents of package.json" >&2
 	echo >&2
 	echo "usage:" >&2
-	echo "  $(basename "${0}") <cmd>" >&2
+	echo "  $(basename "${0}") <mode>" >&2
 	echo >&2
-	echo "cmd:" >&2
-	echo "  serve  Run and host the project (default)" >&2
-	echo "  test   Run test suites; and watch for file changes" >&2
-	echo "  cover  Run test suites just for code coverage" >&2
+	echo "mode:" >&2
+	echo "  (default)  Run the project" >&2
+	echo "  test       Run test suites; and watch for file changes" >&2
+	echo "  cover      Run test suites just for code coverage" >&2
 	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi >&2
