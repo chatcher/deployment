@@ -99,11 +99,12 @@ trap "kill -9 '${killer}' 2>/dev/null" EXIT
 
 
 if [[ "${db_id}" =~ oracle ]]; then
+	echo -e "${K_CS} Running Oracle query ${N_CS}" >&2
 	cd "$(dirname "${BASH_SOURCE[0]}")/sql/oracle" || usage "Failed to cd into ${db_id} directory."
 	gather_env_vars
 
 	oracle='/Users/chad.hatcher/sqlcl/bin/sql'
-	login="${!db_user}/${!db_pass}@//${!db_host}:${!db_port}/${!db_name}"
+	login="${!db_user}/\"${!db_pass}\"@//${!db_host}:${!db_port}/${!db_name}"
 
 	if [ -z "${sql_file}" ]; then
 		echo -e "${S_CS} Connecting to database... ${N_CS}" >&2
@@ -133,6 +134,7 @@ SQL
 	fi
 
 elif [[ "${db_id}" =~ aurora ]]; then
+	echo -e "${K_CS} Running Aurora query ${N_CS}" >&2
 	cd "$(dirname "${BASH_SOURCE[0]}")/sql/aurora" || usage "Failed to cd into ${db_id} directory."
 	gather_env_vars
 
@@ -144,27 +146,28 @@ elif [[ "${db_id}" =~ aurora ]]; then
 
 	if [ -z "${sql_file}" ]; then
 		echo -e "${S_CS} Connecting to database... ${N_CS}" >&2
-		mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" "--database=${!db_name}"
+		mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}"
 
 	elif [ ! -f "sql/${sql_file}.sql" ]; then
 		echo -e "${S_CS} You said: ${N_CS}" >&2
 		echo -e "${W_CS} ${sql_file} ${N_CS}" >&2
 		if prompt 'Execute that as a query?'; then
-			mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" "--database=${!db_name}" <<<"${sql_file};"
+			mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" <<<"${sql_file};"
 		else
 			usage "I don't see a sql script called ${sql_file}"
 		fi
 
 	elif [ -z "${variables}" ]; then
 		echo -e "${S_CS} Executing SQL file... ${N_CS}" >&2
-		mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" "--database=${!db_name}" <"sql/${sql_file}.sql"
+		mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" <"sql/${sql_file}.sql"
 
 	else
 		echo -e "${S_CS} Executing SQL script with variables... ${N_CS}" >&2
-		mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" "--database=${!db_name}" -e "${variables} source sql/${sql_file}.sql;"
+		mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" -e "${variables} source sql/${sql_file}.sql;"
 	fi
 
 else
+	echo -e "${K_CS} Detecting database ${N_CS}" >&2
 	as_oracle=false
 	as_aurora=false
 
