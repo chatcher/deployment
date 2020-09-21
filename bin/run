@@ -29,12 +29,15 @@ if ! [ -f "${filename}" ]; then
 	usage "No ${filename} directory found in path; better luck next time."
 fi
 
-mode="${1:-serve}"
+dev_script="$(jq -rc '.scripts.dev' package.json)"
+start_script="$(jq -rc '.scripts.start' package.json)"
+test_script="$(jq -rc '.scripts.test' package.json)"
+main_script="$(jq -rc '.main' package.json)"
 
-if [[ "${mode}" =~ serve ]]; then
-	dev_script="$(jq -rc '.scripts.dev' package.json)"
-	start_script="$(jq -rc '.scripts.start' package.json)"
 
+mode="${1:-default}"
+
+if [[ "${mode}" =~ default ]]; then
 	if [[ "${dev_script}" =~ nodemon ]]; then
 		clear
 		clear
@@ -56,23 +59,23 @@ if [[ "${mode}" =~ serve ]]; then
 	elif [ "${start_script}" != 'null' ]; then
 		clear
 		clear
-		echo -e "${S_CS} Hosting via npm start ${N_CS}" >&2
+		echo -e "${S_CS} Running npm start ${N_CS}" >&2
 		npm start
 
 	else
-		usage 'I dunno how host'
+		echo -e "dev_script:     '${dev_script}'" >&2
+		echo -e "start_script:   '${start_script}'" >&2
+		usage 'I dunno how run'
 	fi
 
 elif [[ "${mode}" =~ test ]]; then
-	cmd="$(jq -rc '.scripts.test' package.json)"
-
-	if [ "${cmd}" = 'ng test' ]; then
+	if [ "${test_script}" = 'ng test' ]; then
 		clear
 		clear
 		echo -e "${S_CS} Testing via ng test ${N_CS}" >&2
 		ng test --watch=true --code-coverage --source-map
 
-	elif [[ "${cmd}" =~ mocha ]]; then
+	elif [[ "${test_script}" =~ mocha ]]; then
 		clear
 		clear
 		echo -e "${S_CS} Testing via nyc mocha ${N_CS}" >&2
@@ -84,25 +87,23 @@ elif [[ "${mode}" =~ test ]]; then
 		export NODE_ENV="${node_env}"
 		export LOG_LEVEL="${log_level}"
 
-	elif [ "${cmd}" = 'null' ]; then
-		usage 'I dunno how test'
+	elif [ "${test_script}" != 'null' ]; then
+		echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
+		echo "${test_script}" >&2
+		echo -e "${E_CS}but I'm not sure. ${N_CS}" >&2
 
 	else
-		echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
-		echo "${cmd}" >&2
-		echo -e "${E_CS}but I'm not sure. ${N_CS}" >&2
+		usage 'I dunno how test'
 	fi
 
 elif [[ "${mode}" =~ cover ]]; then
-	cmd="$(jq -rc '.scripts.test' package.json)"
-
-	if [ "${cmd}" = 'ng test' ]; then
+	if [ "${test_script}" = 'ng test' ]; then
 		clear
 		clear
 		echo -e "${S_CS} Testing via ng test ${N_CS}" >&2
 		ng test --watch=false --code-coverage --source-map
 
-	elif [[ "${cmd}" =~ mocha ]]; then
+	elif [[ "${test_script}" =~ mocha ]]; then
 		clear
 		clear
 		echo -e "${S_CS} Testing via nyc mocha ${N_CS}" >&2
@@ -114,13 +115,13 @@ elif [[ "${mode}" =~ cover ]]; then
 		export NODE_ENV="${node_env}"
 		export LOG_LEVEL="${log_level}"
 
-	elif [ "${cmd}" = 'null' ]; then
-		usage 'I dunno how test'
+	elif [ "${test_script}" != 'null' ]; then
+		echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
+		echo "${test_script}" >&2
+		echo -e "${E_CS}but I'm not sure. ${N_CS}" >&2
 
 	else
-		echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
-		echo "${cmd}" >&2
-		echo -e "${E_CS}but I'm not sure. ${N_CS}" >&2
+		usage 'I dunno how cover'
 	fi
 
 else
