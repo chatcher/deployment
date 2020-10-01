@@ -15,6 +15,8 @@ delete_branch() {
 	if [[ "${branch}" =~ ^te?mp ]]; then
 		echo -e "${S_CS} Deleting temp branch ${N_CS}" >&2
 		git branch -D "${branch}"
+	elif [[ "${branch}" =~ ^local ]]; then
+		echo -e "${S_CS} Keeping local branch ${N_CS}" >&2
 	elif [ -n "${branch}" ]; then
 		echo -e "${S_CS} Deleting ${branch} ${N_CS}" >&2
 		git branch -d "${branch}" || delete_branch_like_a_jerk "${branch}"
