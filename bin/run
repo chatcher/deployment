@@ -95,8 +95,8 @@ elif [[ "${mode}" =~ test ]]; then
 	if [ "${test_script}" = 'ng test' ]; then
 		clear
 		clear
-		echo -e "${S_CS} Testing via ng test ${N_CS}" >&2
-		ng test --watch=true --code-coverage --source-map
+		echo -e "${S_CS} Testing via ${npx} ng test watch=true ${N_CS}" >&2
+		$npx ng test --watch=true --code-coverage --source-map
 
 	elif [[ "${test_script}" =~ mocha ]]; then
 		clear
