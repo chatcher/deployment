@@ -126,8 +126,14 @@ elif [[ "${mode}" =~ cover ]]; then
 	if [ "${test_script}" = 'ng test' ]; then
 		clear
 		clear
-		echo -e "${S_CS} Testing via ng test ${N_CS}" >&2
-		ng test --watch=false --code-coverage --source-map
+		echo -e "${S_CS} Testing via ${npx} ng test watch=false ${N_CS}" >&2
+		$npx ng test --watch=false --code-coverage --source-map
+
+		if [ -f './coverage/index.html' ]; then
+			open -a 'Google Chrome' './coverage/index.html'
+		else
+			echo -e "${W_CS} Dunno where the coverage report is. ${N_CS}" >&2
+		fi
 
 	elif [[ "${test_script}" =~ mocha ]]; then
 		clear
