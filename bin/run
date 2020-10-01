@@ -121,6 +121,8 @@ elif [[ "${mode}" =~ test ]]; then
 	fi
 
 elif [[ "${mode}" =~ cover ]]; then
+	rm -rf './coverage'
+
 	if [ "${test_script}" = 'ng test' ]; then
 		clear
 		clear
