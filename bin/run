@@ -184,8 +184,8 @@ elif [[ "${mode}" =~ check ]]; then
 
 	echo -e "${S_CS} (default) ${N_CS}" >&2
 	if [[ "${dev_script}" =~ nodemon ]]; then
-		echo -e "\t" npx nodemon ./server/server.js --watch server --watch common >&2
-		echo -e "\t" "${npx}" nodemon "./${main_script}" "${watch_dirs[@]}"
+		echo -e "\t"  npx nodemon ./server/server.js --watch server --watch common >&2
+		echo -e "\t" $npx nodemon "./${main_script}" "${watch_dirs[@]}"
 		echo -e "\t" yarn nodemon ./src/index.js --watch src/api --watch src/config >&2
 	elif [ "${dev_script}" != 'null' ]; then
 		echo -e "\t" npm run dev
@@ -197,11 +197,11 @@ elif [[ "${mode}" =~ check ]]; then
 
 	echo -e "${S_CS} test ${N_CS}" >&2
 	if [ "${test_script}" = 'ng test' ]; then
-		echo -e "\t" ng test --watch=true --code-coverage --source-map
+		echo -e "\t" $npx ng test --watch=true --code-coverage --source-map
 	elif [[ "${test_script}" =~ mocha ]]; then
-		echo -e "\t"    npx   nyc --reporter=lcov    npx   mocha --recursive server/tests           -w --watch-files server,common >&2
-		echo -e "\t" "${npx}" nyc --reporter=lcov "${npx}" mocha --recursive "${test_path}"         -w --watch-files "${watch_dir}"
-		echo -e "\t"    yarn  nyc --reporter=lcov    yarn  mocha --recursive 'src/api/**/*.test.js' -w --watch-files src/api >&2
+		echo -e "\t"  npx nyc --reporter=lcov    npx   mocha --recursive server/tests           -w --watch-files server,common >&2
+		echo -e "\t" $npx nyc --reporter=lcov "${npx}" mocha --recursive "${test_path}"         -w --watch-files "${watch_dir}"
+		echo -e "\t" yarn nyc --reporter=lcov    yarn  mocha --recursive 'src/api/**/*.test.js' -w --watch-files src/api >&2
 	elif [ "${test_script}" != 'null' ]; then
 		echo -e "\t" usage "'maybe just npm run test'"
 	else
@@ -210,11 +210,11 @@ elif [[ "${mode}" =~ check ]]; then
 
 	echo -e "${S_CS} cover ${N_CS}" >&2
 	if [ "${test_script}" = 'ng test' ]; then
-		echo -e "\t" ng test --watch=false --code-coverage --source-map
+		echo -e "\t" $npx ng test --watch=false --code-coverage --source-map
 	elif [[ "${test_script}" =~ mocha ]]; then
-		echo -e "\t"    npx   nyc --reporter=lcov    npx   mocha --exit --recursive server/tests >&2
-		echo -e "\t" "${npx}" nyc --reporter=lcov "${npx}" mocha --exit --recursive "${test_path}"
-		echo -e "\t"    yarn  nyc --reporter=lcov    yarn  mocha --exit --recursive 'src/api/**/*.test.js' >&2
+		echo -e "\t"  npx nyc --reporter=lcov    npx   mocha --exit --recursive server/tests >&2
+		echo -e "\t" $npx nyc --reporter=lcov "${npx}" mocha --exit --recursive "${test_path}"
+		echo -e "\t" yarn nyc --reporter=lcov    yarn  mocha --exit --recursive 'src/api/**/*.test.js' >&2
 	elif [ "${test_script}" != 'null' ]; then
 		echo -e "\t" usage "'maybe just npm run test'"
 	else
