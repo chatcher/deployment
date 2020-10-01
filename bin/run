@@ -101,15 +101,17 @@ elif [[ "${mode}" =~ test ]]; then
 	elif [[ "${test_script}" =~ mocha ]]; then
 		clear
 		clear
-		echo -e "${S_CS} Testing via nyc mocha ${N_CS}" >&2
-		node_env="${NODE_ENV}"
-		log_level="${LOG_LEVEL}"
-		export NODE_ENV=UNIT_TEST
+		echo -e "${S_CS} Testing via ${npx} nyc mocha watch=true ${N_CS}" >&2
+		restore_node_env="${NODE_ENV}"
+		restore_log_level="${LOG_LEVEL}"
+		set_node_env='UNIT_TEST'
+		if [ "${npx}" = 'yarn' ]; then set_node_env='development'; fi
+		export NODE_ENV="${set_node_env}"
 		export LOG_LEVEL=warn
-		# npx nyc --reporter=lcov npx mocha --recursive server/tests --diff -w --watch-files server,common
-		$npx nyc --reporter=lcov "${npx}" mocha --recursive "${test_path}" -w --watch-files "${watch_dir}"
-		export NODE_ENV="${node_env}"
-		export LOG_LEVEL="${log_level}"
+		# $npx nyc --reporter=lcov "${npx}" mocha --recursive "${test_path}" -w --watch-files "${watch_dir}"
+		$npx mocha "${test_path}" --exit
+		export NODE_ENV="${restore_node_env}"
+		export LOG_LEVEL="${restore_log_level}"
 
 	elif [ "${test_script}" != 'null' ]; then
 		echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
