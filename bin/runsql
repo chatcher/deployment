@@ -82,9 +82,10 @@ if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 # if [ -z "${1}" ]; then usage 'Database identifier required'; fi
 # if [ -z "${2}" ]; then usage 'SQL Script name required'; fi
 
-db_id="${1}";
-sql_file="${2}";
-shift 2 || :
+db_id="${1}"; shift || :
+sql_file="${1}"; shift || :
+
+
 
 db_host=
 db_port=
