@@ -24,6 +24,9 @@ line() {
 	fi
 }
 
+line 'git stashes' >&2
+git stash list >&2
+
 line 'git fetch' >&2
 git fetch >&2
 
