@@ -107,6 +107,14 @@ if [[ "${db_id}" =~ oracle ]]; then
 	oracle='/Users/chad.hatcher/sqlcl/bin/sql'
 	login="${!db_user}/\"${!db_pass}\"@//${!db_host}:${!db_port}/${!db_name}"
 
+	variables=""
+	while (( $# > 0 )); do
+		if [ -n "${1}" ]; then
+			variables="DEFINE $(sed -E -e "s/=(.*)/ = '\1'/" <<< "${1}")\n${variables}"
+		fi
+		shift
+	done
+
 	if [ -z "${sql_file}" ]; then
 		echo -e "${S_CS} Connecting to database... ${N_CS}" >&2
 		$oracle -L "${login}"
@@ -128,9 +136,17 @@ SQL
 		echo -e "${S_CS} Executing SQL file with data file... ${N_CS}" >&2
 		$oracle -S -L "${login}" "@sql/${sql_file}.sql" <"sql/${sql_file}.dat"
 
-	else
+	elif [ -z "${variables}" ]; then
 		echo -e "${S_CS} Executing SQL file... ${N_CS}" >&2
 		$oracle -S -L "${login}" "@sql/${sql_file}.sql" </dev/null
+
+	else
+		echo -e "${S_CS} Executing SQL script with variables... ${N_CS}" >&2
+		$oracle -S -L "${login}" <<SQL
+${variables}
+@sql/${sql_file}.sql
+SQL
+
 
 	fi
 
@@ -141,7 +157,9 @@ elif [[ "${db_id}" =~ aurora ]]; then
 
 	variables=""
 	while (( $# > 0 )); do
-		variables="set @$(sed -E -e "s/=(.*)/='\1'/" <<< "${1}"); ${variables}"
+		if [ -n "${1}" ]; then
+			variables="set @$(sed -E -e "s/=(.*)/='\1'/" <<< "${1}"); ${variables}"
+		fi
 		shift
 	done
 
@@ -185,11 +203,11 @@ else
 
 	elif $as_oracle; then
 		echo -e "${I_CS} Switching to Oracle ${N_CS}" >&2
-		${BASH_SOURCE[0]} 'oracle' "$@"
+		${BASH_SOURCE[0]} 'oracle' "${db_id}" "${sql_file}" "$@"
 
 	elif $as_aurora && ! $as_oracle; then
 		echo -e "${I_CS} Switching to Aurora ${N_CS}" >&2
-		${BASH_SOURCE[0]} 'aurora' "$@"
+		${BASH_SOURCE[0]} 'aurora' "${db_id}" "${sql_file}" "$@"
 
 	else
 		usage "Unknown database: '${db_id}'."
