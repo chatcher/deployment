@@ -140,15 +140,25 @@ elif [[ "${mode}" =~ cover ]]; then
 	elif [[ "${test_script}" =~ mocha ]]; then
 		clear
 		clear
-		echo -e "${S_CS} Testing via nyc mocha ${N_CS}" >&2
-		node_env="${NODE_ENV}"
-		log_level="${LOG_LEVEL}"
-		export NODE_ENV=UNIT_TEST
+		echo -e "${S_CS} Testing via ${npx} nyc mocha watch=false ${N_CS}" >&2
+		restore_node_env="${NODE_ENV}"
+		restore_log_level="${LOG_LEVEL}"
+		set_node_env='UNIT_TEST'
+		if [ "${npx}" = 'yarn' ]; then set_node_env='development'; fi
+		export NODE_ENV="${set_node_env}"
 		export LOG_LEVEL=warn
 		# npx nyc --reporter=lcov npx mocha --recursive server/tests --diff
-		$npx nyc --reporter=lcov "${npx}" mocha --exit --recursive "${test_path}"
-		export NODE_ENV="${node_env}"
-		export LOG_LEVEL="${log_level}"
+		# echo -e "\t" $npx nyc --reporter=lcov "${npx}" mocha --exit --recursive "${test_path}"
+		# echo -e "\t" $npx nyc --reporter=html --reporter=text --reporter=lcov "${npx}" mocha --timeout 20000 --exit --recursive 'src/api/**/*.test.js'
+		$npx nyc --reporter=lcov mocha --exit --recursive 'src/api/**/*.test.js'
+		export NODE_ENV="${restore_node_env}"
+		export LOG_LEVEL="${restore_log_level}"
+
+		if [ -f './coverage/lcov-report/index.html' ]; then
+			open -a 'Google Chrome' './coverage/lcov-report/index.html'
+		else
+			echo -e "${W_CS} Dunno where the coverage report is. ${N_CS}" >&2
+		fi
 
 	elif [ "${test_script}" != 'null' ]; then
 		echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
