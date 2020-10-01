@@ -61,15 +61,17 @@ if [[ "${mode}" =~ default ]]; then
 	if [[ "${dev_script}" =~ nodemon ]]; then
 		clear
 		clear
-		echo -e "${S_CS} Hosting via nodemon ${N_CS}" >&2
-		node_env="${NODE_ENV}"
-		log_level="${LOG_LEVEL}"
-		export NODE_ENV=dev1
+		echo -e "${S_CS} Hosting via ${npx} nodemon ${N_CS}" >&2
+		restore_node_env="${NODE_ENV}"
+		restore_log_level="${LOG_LEVEL}"
+		set_node_env='dev1'
+		if [ "${npx}" = 'yarn' ]; then set_node_env='development'; fi
+		export NODE_ENV="${set_node_env}"
 		export LOG_LEVEL=debug
 		# npx nodemon server/server.js --watch common --watch server
 		$npx nodemon "./${main_script}" "${watch_dirs[@]}"
-		export NODE_ENV="${node_env}"
-		export LOG_LEVEL="${log_level}"
+		export NODE_ENV="${restore_node_env}"
+		export LOG_LEVEL="${restore_log_level}"
 
 	# elif [ "${dev_script}" != 'null' ]; then
 	# 	clear
