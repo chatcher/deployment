@@ -72,7 +72,7 @@ elif prompt "Create branch? ${branch}"; then
 	echo -e "${S_CS} Creating new branch... ${N_CS}" >&2
 	git checkout -b "${branch}" || usage "Failed to checkout ${branch}"
 	if prompt "Push to remote?"; then
-		git push -u origin "${branch}"
+		git push -u origin "${branch}" --no-verify
 	fi
 
 else
