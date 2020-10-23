@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+set -e
+set -x
+
+squish_stash() {
+	git stash apply || prompt 'You wanna fix that crap?'
+	git stash drop
+	git add .
+
+	if has-staged-changes; then
+		git commit --no-verify -m "$(date +%s)"
+
+	else
+		echo -e  "${S_CS} Okay, that one ended up being empty. ${N_CS}" >&2
+	fi
+}
+
+usage() {
+	echo "Smash all your stashes into nothingness" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}")" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+git stash -u
+git checkout -b "tmp/$(date +%s)"
+
+stashcount="$(git stash list | wc -l | tr -d ' ')"
+stashindex=0
+while (( stashindex < stashcount )); do
+	squish_stash
+	stashindex="$(( stashindex + 1 ))"
+done
+
+echo -e "${I_CS} Merged ${stashindex} / ${stashcount} stashes ${N_CS}"
+
+if (( stashindex > 0 )); then
+	reset_to="HEAD"
+	while (( stashindex > 0 )); do
+		reset_to="${reset_to}~"
+		stashindex="$(( stashindex - 1 ))"
+	done
+	git reset "${reset_to}"
+fi
