@@ -93,8 +93,7 @@ db_user=
 db_pass=
 db_name=
 
-# 1800 seconds is half an hour
-(sleep 1800; kill -15 -$$) &
+(sleep 30; kill -15 -$$) &
 killer=$!
 trap "kill -9 '${killer}' 2>/dev/null" EXIT
 
