@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-count="$(git diff --name-only --cached 2>/dev/null | wc -l | sed -E -e 's/[[:space:]]//g')"
+count="$(git diff --name-only --cached 2>/dev/null | wc -l | tr -d ' ')"
 
 if (( count > 0 )); then exit; fi
 
