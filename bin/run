@@ -109,7 +109,7 @@ elif [[ "${mode}" =~ test ]]; then
 		export NODE_ENV="${set_node_env}"
 		export LOG_LEVEL=warn
 		# $npx nyc --reporter=lcov "${npx}" mocha --recursive "${test_path}" -w --watch-files "${watch_dir}"
-		$npx mocha "${test_path}" --exit
+		$npx nyc --reporter=lcov mocha "${test_path}" --exit
 		export NODE_ENV="${restore_node_env}"
 		export LOG_LEVEL="${restore_log_level}"
 
