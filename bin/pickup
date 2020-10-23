@@ -25,8 +25,13 @@ if [ -z "${branch}" ]; then usage "Branch or Pull Request Number required."; fi
 
 checkout "${branch}"
 checkout temp
-git rebase origin/dev || prompt 'You wanna fix that crap?'
+
+sha="$(stash)"
+git rebase origin/dev || prompt 'Rebase failed. You wanna take care of that?'
+unstash "${sha}" || prompt 'Unstash failed. You wanna fix that crap?'
+
 git reset origin/dev
+
 git stash
 checkout "${initial}"
 git stash pop
