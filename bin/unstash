@@ -18,5 +18,5 @@ usage() {
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
 if [ -n "${1}" ]; then
-	git stash apply "${1}"
+	git stash apply --index "${1}"
 fi
