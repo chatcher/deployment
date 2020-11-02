@@ -1,5 +1,19 @@
 #!/usr/bin/env bash
 
+preamble() {
+	clear
+	clear
+	echo -e "${S_CS} ${1} ${N_CS}" >&2
+}
+
+temp_env() {
+	node_env="${NODE_ENV}"
+	log_level="${LOG_LEVEL}"
+	export NODE_ENV="${1:-$node_env}"
+	export LOG_LEVEL="${2:-$log_level}"
+	trap 'export NODE_ENV="${node_env}"; export LOG_LEVEL="${log_level}";' EXIT
+}
+
 usage() {
 	echo "Run the current project based on contents of package.json" >&2
 	echo >&2
@@ -10,6 +24,7 @@ usage() {
 	echo "  (default)  Run the project" >&2
 	echo "  test       Run test suites; and watch for file changes" >&2
 	echo "  cover      Run test suites just for code coverage" >&2
+	echo "  staged     Run test suites against currently staged code" >&2
 	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi >&2
@@ -59,30 +74,16 @@ mode="${1:-default}"
 
 if [[ "${mode}" =~ default ]]; then
 	if [[ "${dev_script}" =~ nodemon ]]; then
-		clear
-		clear
-		echo -e "${S_CS} Hosting via ${npx} nodemon ${N_CS}" >&2
-		restore_node_env="${NODE_ENV}"
-		restore_log_level="${LOG_LEVEL}"
-		set_node_env='dev1'
-		if [ "${npx}" = 'yarn' ]; then set_node_env='development'; fi
-		export NODE_ENV="${set_node_env}"
-		export LOG_LEVEL=debug
-		# npx nodemon server/server.js --watch common --watch server
-		$npx nodemon "./${main_script}" "${watch_dirs[@]}"
-		export NODE_ENV="${restore_node_env}"
-		export LOG_LEVEL="${restore_log_level}"
+		preamble "Hosting via ${npx} nodemon"
+		if [ "${npx}" = 'yarn' ]
+		then temp_env 'development' 'debug'
+		else temp_env 'dev1' 'debug'
+		fi
 
-	# elif [ "${dev_script}" != 'null' ]; then
-	# 	clear
-	# 	clear
-	# 	echo -e "${S_CS} Running dev script ${N_CS}" >&2
-	# 	npm run dev
+		$npx nodemon "./${main_script}" "${watch_dirs[@]}"
 
 	elif [ "${start_script}" != 'null' ]; then
-		clear
-		clear
-		echo -e "${S_CS} Running npm start ${N_CS}" >&2
+		preamble "Running npm start"
 		npm start
 
 	else
@@ -92,26 +93,17 @@ if [[ "${mode}" =~ default ]]; then
 	fi
 
 elif [[ "${mode}" =~ test ]]; then
-	if [ "${test_script}" = 'ng test' ]; then
-		clear
-		clear
-		echo -e "${S_CS} Testing via ${npx} ng test watch=true ${N_CS}" >&2
-		$npx ng test --watch=true --code-coverage --source-map
-
-	elif [[ "${test_script}" =~ mocha ]]; then
-		clear
-		clear
-		echo -e "${S_CS} Testing via ${npx} nyc mocha watch=true ${N_CS}" >&2
-		restore_node_env="${NODE_ENV}"
-		restore_log_level="${LOG_LEVEL}"
-		set_node_env='UNIT_TEST'
-		if [ "${npx}" = 'yarn' ]; then set_node_env='development'; fi
-		export NODE_ENV="${set_node_env}"
-		export LOG_LEVEL=warn
-		# $npx nyc --reporter=lcov "${npx}" mocha --recursive "${test_path}" -w --watch-files "${watch_dir}"
+	if [[ "${test_script}" =~ mocha ]]; then
+		preamble "Testing via ${npx} nyc mocha watch=true"
+		if [ "${npx}" = 'yarn' ]
+		then temp_env 'development' 'warn'
+		else temp_env 'UNIT_TEST' 'warn'
+		fi
 		$npx nyc --reporter=lcov mocha "${test_path}" --exit
-		export NODE_ENV="${restore_node_env}"
-		export LOG_LEVEL="${restore_log_level}"
+
+	elif [ "${test_script}" = 'ng test' ]; then
+		preamble "Testing via ${npx} ng test watch=true"
+		$npx ng test --watch=true --code-coverage --source-map
 
 	elif [ "${test_script}" != 'null' ]; then
 		echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
@@ -125,40 +117,17 @@ elif [[ "${mode}" =~ test ]]; then
 elif [[ "${mode}" =~ cover ]]; then
 	rm -rf './coverage'
 
-	if [ "${test_script}" = 'ng test' ]; then
-		clear
-		clear
-		echo -e "${S_CS} Testing via ${npx} ng test watch=false ${N_CS}" >&2
-		$npx ng test --watch=false --code-coverage --source-map
-
-		if [ -f './coverage/index.html' ]; then
-			open -a 'Google Chrome' './coverage/index.html'
-		else
-			echo -e "${W_CS} Dunno where the coverage report is. ${N_CS}" >&2
+	if [[ "${test_script}" =~ mocha ]]; then
+		preamble "Testing via ${npx} nyc mocha watch=false"
+		if [ "${npx}" = 'yarn' ]
+		then temp_env 'development' 'warn'
+		else temp_env 'UNIT_TEST' 'warn'
 		fi
-
-	elif [[ "${test_script}" =~ mocha ]]; then
-		clear
-		clear
-		echo -e "${S_CS} Testing via ${npx} nyc mocha watch=false ${N_CS}" >&2
-		restore_node_env="${NODE_ENV}"
-		restore_log_level="${LOG_LEVEL}"
-		set_node_env='UNIT_TEST'
-		if [ "${npx}" = 'yarn' ]; then set_node_env='development'; fi
-		export NODE_ENV="${set_node_env}"
-		export LOG_LEVEL=warn
-		# npx nyc --reporter=lcov npx mocha --recursive server/tests --diff
-		# echo -e "\t" $npx nyc --reporter=lcov "${npx}" mocha --exit --recursive "${test_path}"
-		# echo -e "\t" $npx nyc --reporter=html --reporter=text --reporter=lcov "${npx}" mocha --timeout 20000 --exit --recursive 'src/api/**/*.test.js'
 		$npx nyc --reporter=lcov mocha --exit --recursive 'src/api/**/*.test.js'
-		export NODE_ENV="${restore_node_env}"
-		export LOG_LEVEL="${restore_log_level}"
 
-		if [ -f './coverage/lcov-report/index.html' ]; then
-			open -a 'Google Chrome' './coverage/lcov-report/index.html'
-		else
-			echo -e "${W_CS} Dunno where the coverage report is. ${N_CS}" >&2
-		fi
+	elif [ "${test_script}" = 'ng test' ]; then
+		preamble "Testing via ${npx} ng test watch=false"
+		$npx ng test --watch=false --code-coverage --source-map
 
 	elif [ "${test_script}" != 'null' ]; then
 		echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
@@ -168,6 +137,54 @@ elif [[ "${mode}" =~ cover ]]; then
 	else
 		usage 'I dunno how cover'
 	fi
+
+	if [ -f './coverage/lcov-report/index.html' ]; then
+		open -a 'Google Chrome' './coverage/lcov-report/index.html'
+	elif [ -f './coverage/index.html' ]; then
+		open -a 'Google Chrome' './coverage/index.html'
+	else
+		echo -e "${W_CS} Dunno where the coverage report is. ${N_CS}" >&2
+	fi
+
+
+elif [[ "${mode}" =~ stage ]]; then
+	rm -rf './coverage' >&2
+	git checkout docs/v1/swagger* >&2
+	git stash --keep-index >&2
+	# !! apply and drop stage after running tests
+
+	if [[ "${test_script}" =~ mocha ]]; then
+		preamble "Testing via ${npx} nyc mocha watch=false"
+		if [ "${npx}" = 'yarn' ]
+		then temp_env 'development' 'warn'
+		else temp_env 'UNIT_TEST' 'warn'
+		fi
+		$npx nyc --reporter=lcov mocha --exit --recursive 'src/api/**/*.test.js'
+
+	elif [ "${test_script}" = 'ng test' ]; then
+		preamble "Testing via ${npx} ng test watch=false"
+		$npx ng test --watch=false --code-coverage --source-map
+
+	elif [ "${test_script}" != 'null' ]; then
+		echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
+		echo "${test_script}" >&2
+		echo -e "${E_CS}but I'm not sure. ${N_CS}" >&2
+
+	else
+		usage 'I dunno how cover'
+	fi
+
+	git stash apply >&2
+	git stash drop >&2
+
+	# if [ -f './coverage/lcov-report/index.html' ]; then
+	# 	open -a 'Google Chrome' './coverage/lcov-report/index.html'
+	# elif [ -f './coverage/index.html' ]; then
+	# 	open -a 'Google Chrome' './coverage/index.html'
+	# else
+	# 	echo -e "${W_CS} Dunno where the coverage report is. ${N_CS}" >&2
+	# fi
+
 
 elif [[ "${mode}" =~ check ]]; then
 
