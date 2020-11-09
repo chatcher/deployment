@@ -93,9 +93,10 @@ db_user=
 db_pass=
 db_name=
 
-(sleep 30; kill -15 -$$) &
+set -m
+(sleep 10; kill -15 -$$) &
 killer=$!
-trap "kill -9 '${killer}' 2>/dev/null" EXIT
+trap 'kill -- -"${killer}" 2>/dev/null' EXIT
 
 
 if [[ "${db_id}" =~ oracle ]]; then
@@ -116,6 +117,8 @@ if [[ "${db_id}" =~ oracle ]]; then
 
 	if [ -z "${sql_file}" ]; then
 		echo -e "${S_CS} Connecting to database... ${N_CS}" >&2
+		kill -- -"${killer}" 2>/dev/null
+		trap - EXIT
 		$oracle -L "${login}"
 
 	elif [ ! -f "sql/${sql_file}.sql" ]; then
@@ -164,6 +167,8 @@ elif [[ "${db_id}" =~ aurora ]]; then
 
 	if [ -z "${sql_file}" ]; then
 		echo -e "${S_CS} Connecting to database... ${N_CS}" >&2
+		kill -- -"${killer}" 2>/dev/null
+		trap - EXIT
 		mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}"
 
 	elif [ ! -f "sql/${sql_file}.sql" ]; then
