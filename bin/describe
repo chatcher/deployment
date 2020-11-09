@@ -87,7 +87,9 @@ table="${3}"
 if [ -z "${3}" ]; then
 	# schema and table were (presumably) provided in dotted format
 	schema="${2%.*}"
-	table="${2#*.}"
+	if [[ "${2}" =~ \. ]]; then
+		table="${2#*.}"
+	fi
 fi
 
 if [ -z "${db_id}" ]; then usage 'Database identifier required'; fi
