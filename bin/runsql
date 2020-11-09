@@ -216,4 +216,8 @@ else
 	else
 		usage "Unknown database: '${db_id}'."
 	fi
+
+	exit
 fi
+
+echo -e "${S_CS} Done ${N_CS}" >&2
