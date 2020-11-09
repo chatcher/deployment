@@ -125,7 +125,7 @@ describe ${schema}.${table};
 select count(*) from ${schema}.${table};
 SQL
 
-elif [[ "${db_id}" =~ aurora ]]; then
+elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
 	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
 	mkdir -p "tables/${schema}"
 	gather_env_vars

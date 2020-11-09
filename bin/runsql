@@ -152,7 +152,7 @@ SQL
 
 	fi
 
-elif [[ "${db_id}" =~ aurora ]]; then
+elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
 	echo -e "${K_CS} Running Aurora query ${N_CS}" >&2
 	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
 	gather_env_vars
