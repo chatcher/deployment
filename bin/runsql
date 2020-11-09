@@ -169,24 +169,24 @@ elif [[ "${db_id}" =~ aurora ]]; then
 		echo -e "${S_CS} Connecting to database... ${N_CS}" >&2
 		kill -- -"${killer}" 2>/dev/null
 		trap - EXIT
-		mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}"
+		mysql -A --connect-expired-password --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}"
 
 	elif [ ! -f "sql/${sql_file}.sql" ]; then
 		echo -e "${S_CS} You said: ${N_CS}" >&2
 		echo -e "${W_CS} ${sql_file} ${N_CS}" >&2
 		if prompt 'Execute that as a query?'; then
-			mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" <<<"${sql_file};"
+			mysql -A --connect-expired-password --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" <<<"${sql_file};"
 		else
 			usage "I don't see a sql script called ${sql_file}"
 		fi
 
 	elif [ -z "${variables}" ]; then
 		echo -e "${S_CS} Executing SQL file... ${N_CS}" >&2
-		mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" <"sql/${sql_file}.sql"
+		mysql -A --connect-expired-password --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" <"sql/${sql_file}.sql"
 
 	else
 		echo -e "${S_CS} Executing SQL script with variables... ${N_CS}" >&2
-		mysql -A --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" -e "${variables} source sql/${sql_file}.sql;"
+		mysql -A --connect-expired-password --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" -e "${variables} source sql/${sql_file}.sql;"
 	fi
 
 else

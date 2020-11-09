@@ -135,6 +135,7 @@ elif [[ "${db_id}" =~ aurora ]]; then
 	get_count="SELECT TABLE_ROWS as APPROX_ROWS FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='${schema}' AND TABLE_NAME='${table}'"
 
 	mysql -A --table \
+		'--connect-expired-password' \
 		"--host=${!db_host}" \
 		"--port=${!db_port}" \
 		"--user=${!db_user}" \
