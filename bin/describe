@@ -109,7 +109,7 @@ suffix="$(sed -E -e 's/^[^-]+-?//' <<< "${db_id}")"
 filename="tables/${schema}/${table}.${suffix}${suffix:+.}txt"
 
 if [[ "${db_id}" =~ oracle ]]; then
-	cd "$(dirname "${BASH_SOURCE[0]}")/sql/oracle" || usage "Failed to cd into ${db_id} directory."
+	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
 	mkdir -p "tables/${schema}"
 	gather_env_vars
 
@@ -126,7 +126,7 @@ select count(*) from ${schema}.${table};
 SQL
 
 elif [[ "${db_id}" =~ aurora ]]; then
-	cd "$(dirname "${BASH_SOURCE[0]}")/sql/aurora" || usage "Failed to cd into ${db_id} directory."
+	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
 	mkdir -p "tables/${schema}"
 	gather_env_vars
 

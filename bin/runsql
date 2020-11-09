@@ -100,7 +100,7 @@ trap "kill -9 '${killer}' 2>/dev/null" EXIT
 
 if [[ "${db_id}" =~ oracle ]]; then
 	echo -e "${K_CS} Running Oracle query ${N_CS}" >&2
-	cd "$(dirname "${BASH_SOURCE[0]}")/sql/oracle" || usage "Failed to cd into ${db_id} directory."
+	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
 	gather_env_vars
 
 	oracle='/Users/chad.hatcher/sqlcl/bin/sql'
@@ -151,7 +151,7 @@ SQL
 
 elif [[ "${db_id}" =~ aurora ]]; then
 	echo -e "${K_CS} Running Aurora query ${N_CS}" >&2
-	cd "$(dirname "${BASH_SOURCE[0]}")/sql/aurora" || usage "Failed to cd into ${db_id} directory."
+	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
 	gather_env_vars
 
 	variables=""
