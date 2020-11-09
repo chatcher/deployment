@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+
+# echo; echo -e "${S_CS} -c Tracked ${N_CS}" >&2
+# git ls-files --exclude-standard -c
+echo; echo -e "${S_CS} -d Deleted ${N_CS}" >&2
+git ls-files --exclude-standard -d
+echo; echo -e "${S_CS} -o Untraked ${N_CS}" >&2
+git ls-files --exclude-standard -o
+echo; echo -e "${S_CS} -i Ignored ${N_CS}" >&2
+git ls-files --exclude-standard -i
+echo; echo -e "${S_CS} -u Unmerged ${N_CS}" >&2
+git ls-files --exclude-standard -u
+# echo; echo -e "${S_CS} -k ${N_CS}" >&2
+# git ls-files --exclude-standard -k
+echo; echo -e "${S_CS} -m Modified ${N_CS}" >&2
+git ls-files --exclude-standard -m
+
+
+echo; echo -e "${S_CS} -m Unstaged ${N_CS}" >&2
+git ls-files --exclude-standard -mo
