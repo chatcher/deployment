@@ -79,7 +79,7 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-
+describe_all=false
 db_id="${1}"
 schema="${2}"
 procedure="${3}"
@@ -90,6 +90,11 @@ if [ -z "${3}" ]; then
 	if [[ "${2}" =~ \. ]]; then
 		procedure="${2#*.}"
 	fi
+fi
+
+if [ "${procedure}" = '-a' ]; then
+	procedure=''
+	describe_all=true
 fi
 
 if [ -z "${db_id}" ]; then usage 'Database identifier required'; fi
@@ -104,10 +109,13 @@ if [ -z "${procedure}" ]; then
 	while read -u 3 -r line; do
 		procedure="$(sed -E -e 's/[^A-Za-z0-9_]//g' <<< "${line}")"
 		if [ -n "${procedure}" ]; then
-			echo -e "${S_CS} [${procedure}] ${N_CS}" >&2
-			# $0 "$@" "${procedure}"
+			if [ "${describe_all}" = 'true' ]; then
+				$0 "${db_id}" "${schema}" "${procedure}"
+			else
+				echo -e "${S_CS} [${procedure}] ${N_CS}" >&2
+			fi
 		fi
-	done 3<<< "$(runsql "${db_id}" "${query}" <<< 'y' | tail -n +3)"
+	done 3<<< "$(runsql "${db_id}" "${query}" <<< 'y' 2>/dev/null | tail -n +3)"
 	exit
 fi
 
