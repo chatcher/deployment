@@ -1,0 +1,185 @@
+#!/usr/bin/env bash
+
+set -e
+# set -x
+
+gather_env_vars() {
+	re="$(sed -E -e 's/[^a-z]/./g' <<< "${db_id}" | tr '[:lower:]' '[:upper:]')"
+
+	while read -u 3 -r line; do
+		if [[ "${line}" =~ ^[a-zA-Z0-9._-]+= ]]; then
+			var="${line%=*}"
+			val="${line#*=}"
+
+			if [[ "${var}" =~ HOST ]] && [[ "${val}" =~ $db_id ]]; then
+				# echo -e "${D_CS} '${var}' = '${val}' ${N_CS}" >&2
+
+				# Found what looks like a database host
+				if [ -z "${db_host}" ]; then
+					# echo -e "${D_CS} using that ${N_CS}" >&2
+					db_host="${var}"
+				elif [[ "${var}" =~ $re ]]; then
+					# echo -e "${D_CS} switching ${N_CS}" >&2
+					db_host="${var}"
+				else
+					# but we already have one picked out
+					# echo -e "${D_CS} skipping that ${N_CS}" >&2
+					:
+				fi
+			fi
+		fi
+	done 3<<< "$(env)"
+
+	if [ -z "${db_host}" ]; then usage 'Failed to figure out a database variable for the host.'; fi
+
+	# db_host="${db_host}"
+	db_port="${db_host/HOST/PORT}"
+	db_user="${db_host/HOST/USER}"
+	db_pass="${db_host/HOST/PASSWORD}"
+	db_name="${db_host/HOST/DATABASE}"
+
+	if [ -z "${db_port}" ]; then usage 'Failed to figure out a database variable for the port.'; fi
+	if [ -z "${db_user}" ]; then usage 'Failed to figure out a database variable for the user.'; fi
+	if [ -z "${db_pass}" ]; then usage 'Failed to figure out a database variable for the pass.'; fi
+	if [ -z "${db_name}" ]; then usage 'Failed to figure out a database variable for the name.'; fi
+
+
+	if [ -z "${!db_host}" ]; then usage "Picked up ${db_host} for the host, but it has no value.'"; fi
+	if [ -z "${!db_port}" ]; then usage "Picked up ${db_port} for the port, but it has no value.'"; fi
+	if [ -z "${!db_user}" ]; then usage "Picked up ${db_user} for the user, but it has no value.'"; fi
+	if [ -z "${!db_pass}" ]; then usage "Picked up ${db_pass} for the pass, but it has no value.'"; fi
+	if [ -z "${!db_name}" ]; then usage "Picked up ${db_name} for the name, but it has no value.'"; fi
+
+	echo -e "${K_CS} Using ${db_host} = ${!db_host} ${N_CS}" >&2
+	echo -e "${K_CS} Using ${db_port} = ${!db_port} ${N_CS}" >&2
+	echo -e "${K_CS} Using ${db_user} = ${!db_user} ${N_CS}" >&2
+	echo -e "${K_CS} Using ${db_pass} = ${!db_pass} ${N_CS}" >&2
+	echo -e "${K_CS} Using ${db_name} = ${!db_name} ${N_CS}" >&2
+}
+
+usage() {
+	echo "Describe the specified stored procedure and write to file in sql/{<db_id>}/tables/{schema}/{procedure}.txt" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <db_id> <schema> <procedure>" >&2
+	echo >&2
+	echo "parameters:" >&2
+	echo "  db_id" >&2
+	echo "        The type of database to run the query against. E.g. 'oracle'" >&2
+	echo "  schema" >&2
+	echo "        The name of the database to run the query in. E.g. 'common'" >&2
+	echo "  procedure" >&2
+	echo "        The name of the procedure to describe" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+
+db_id="${1}"
+schema="${2}"
+procedure="${3}"
+
+if [ -z "${3}" ]; then
+	# schema and procedure were (presumably) provided in dotted format
+	schema="${2%.*}"
+	if [[ "${2}" =~ \. ]]; then
+		procedure="${2#*.}"
+	fi
+fi
+
+if [ -z "${db_id}" ]; then usage 'Database identifier required'; fi
+if [ -z "${schema}" ]; then usage 'Schema name required'; fi
+if [ -z "${procedure}" ]; then
+	query="
+		SELECT routine_name
+		FROM information_schema.routines
+		WHERE routine_type = 'PROCEDURE'
+		  AND routine_schema = '${schema}'
+	"
+	while read -u 3 -r line; do
+		procedure="$(sed -E -e 's/[^A-Za-z0-9_]//g' <<< "${line}")"
+		if [ -n "${procedure}" ]; then
+			echo -e "${S_CS} [${procedure}] ${N_CS}" >&2
+			# $0 "$@" "${procedure}"
+		fi
+	done 3<<< "$(runsql "${db_id}" "${query}" <<< 'y' | tail -n +3)"
+	exit
+fi
+
+schema="$(tr '[:lower:]' '[:upper:]' <<< "${schema}")"
+procedure="$(tr '[:lower:]' '[:upper:]' <<< "${procedure}")"
+
+db_host=
+db_port=
+db_user=
+db_pass=
+db_name=
+
+suffix="$(sed -E -e 's/^[^-]+-?//' <<< "${db_id}")"
+filename="tables/${schema}${suffix:+/}${suffix}/${procedure}.txt"
+
+if [[ "${db_id}" =~ oracle ]]; then
+	usage 'oracle not implemented yet'
+
+	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
+	mkdir -p "tables/${schema}${suffix:+/}${suffix}"
+	gather_env_vars
+
+	echo "${schema}.${procedure}" | tee "${filename}"
+
+	oracle='/Users/chad.hatcher/sqlcl/bin/sql'
+	login="${!db_user}/${!db_pass}@//${!db_host}:${!db_port}/${!db_name}"
+	query="SHOW CREATE PROCEDURE ${schema}.${procedure};"
+
+	$oracle -S -L "${login}" \
+		<<< "${query}" \
+		| sed -E -e 's/\\n/\'$'\n''/g' \
+		>> "${filename}"
+
+elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
+	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
+	mkdir -p "tables/${schema}${suffix:+/}${suffix}"
+	gather_env_vars
+
+	echo "${schema}.${procedure}" | tee "${filename}"
+
+	query="
+		SELECT
+			' ' as 'indent',
+			PARAMETER_MODE,
+			PARAMETER_NAME,
+			CONCAT(
+				DATA_TYPE,
+				'(',CHARACTER_MAXIMUM_LENGTH,')'
+			)
+		FROM information_schema.parameters
+		WHERE SPECIFIC_SCHEMA = '${schema}'
+		  AND SPECIFIC_NAME = '${procedure}'
+		ORDER BY ORDINAL_POSITION
+		;
+
+		SELECT ROUTINE_DEFINITION
+		FROM INFORMATION_SCHEMA.ROUTINES
+		WHERE ROUTINE_SCHEMA = '${schema}'
+		  AND SPECIFIC_NAME = '${procedure}';
+	"
+
+	mysql -A -N \
+		'--connect-expired-password' \
+		"--host=${!db_host}" \
+		"--port=${!db_port}" \
+		"--user=${!db_user}" \
+		"--password=${!db_pass}" \
+		"--database=${!db_name}" \
+		<<< "${query}" \
+		| sed -E -e 's/\\n/\'$'\n''/g' -e 's/'$'\t''/ /g' \
+		>> "${filename}"
+
+else
+	usage "Unsupported database: '${db_id}'."
+fi
