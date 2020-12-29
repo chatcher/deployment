@@ -72,6 +72,10 @@ if [ -d 'common' ]; then watch_dir="${watch_dir},common"; fi
 
 mode="${1:-default}"
 
+echo -e "${K_CS} npx mode: ${npx} ${mode} ${N_CS}" >&2
+echo -e "${K_CS} test_path: ${test_path} ${N_CS}" >&2
+echo -e "${K_CS} watch_dirs: ${watch_dirs[*]} ${N_CS}" >&2
+
 if [[ "${mode}" =~ default ]]; then
 	if [[ "${dev_script}" =~ nodemon ]]; then
 		preamble "Hosting via ${npx} nodemon"
@@ -99,7 +103,10 @@ elif [[ "${mode}" =~ test ]]; then
 		then temp_env 'development' 'warn'
 		else temp_env 'UNIT_TEST' 'warn'
 		fi
-		$npx nyc --reporter=lcov mocha "${test_path}" --exit
+		if [ "${npx}" = 'yarn' ]
+		then $npx nyc --reporter=lcov mocha "${test_path}" --exit
+		else $npx nyc --reporter=lcov mocha "${test_path}" -w "${watch_dirs[*]}"
+		fi
 
 	elif [ "${test_script}" = 'ng test' ]; then
 		preamble "Testing via ${npx} ng test watch=true"
@@ -123,7 +130,8 @@ elif [[ "${mode}" =~ cover ]]; then
 		then temp_env 'development' 'warn'
 		else temp_env 'UNIT_TEST' 'warn'
 		fi
-		$npx nyc --reporter=lcov mocha --exit --recursive 'src/api/**/*.test.js'
+		$npx nyc --reporter=lcov mocha "${test_path}" --exit
+		 # --recursive 'src/api/**/*-test.js'
 
 	elif [ "${test_script}" = 'ng test' ]; then
 		preamble "Testing via ${npx} ng test watch=false"
