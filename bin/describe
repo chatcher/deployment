@@ -94,7 +94,16 @@ fi
 
 if [ -z "${db_id}" ]; then usage 'Database identifier required'; fi
 if [ -z "${schema}" ]; then usage 'Schema name required'; fi
-if [ -z "${table}" ]; then usage 'Table name required'; fi
+if [ -z "${table}" ]; then
+	while read -u 3 -r line; do
+		table="$(sed -E -e 's/[^A-Za-z0-9_]//g' <<< "${line}")"
+		if [ -n "${table}" ]; then
+			echo -e "${S_CS} ${table} ${N_CS}" >&2
+			$0 "$@" "${table}"
+		fi
+	done 3<<< "$(runsql "${db_id}" "use ${schema}; show tables" <<< 'y' | tail -n +3)"
+	exit
+fi
 
 schema="$(tr '[:lower:]' '[:upper:]' <<< "${schema}")"
 table="$(tr '[:lower:]' '[:upper:]' <<< "${table}")"
@@ -106,33 +115,39 @@ db_pass=
 db_name=
 
 suffix="$(sed -E -e 's/^[^-]+-?//' <<< "${db_id}")"
-filename="tables/${schema}/${table}.${suffix}${suffix:+.}txt"
+filename="tables/${schema}${suffix:+/}${suffix}/${table}.txt"
 
 if [[ "${db_id}" =~ oracle ]]; then
 	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
-	mkdir -p "tables/${schema}"
+	mkdir -p "tables/${schema}${suffix:+/}${suffix}"
 	gather_env_vars
 
 	echo "${schema}.${table}" | tee "${filename}"
 
 	oracle='/Users/chad.hatcher/sqlcl/bin/sql'
 	login="${!db_user}/${!db_pass}@//${!db_host}:${!db_port}/${!db_name}"
+	query="
+		DESCRIBE ${schema}.${table};
+		SELECT COUNT(*) FROM ${schema}.${table};
+	"
 
-	$oracle -S -L "${login}" \
-		>> "${filename}" \
-		<<SQL
-describe ${schema}.${table};
-select count(*) from ${schema}.${table};
-SQL
+	$oracle -S -L "${login}" <<< "$query" >> "${filename}"
 
 elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
 	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
-	mkdir -p "tables/${schema}"
+	mkdir -p "tables/${schema}${suffix:+/}${suffix}"
 	gather_env_vars
 
 	echo "${schema}.${table}" | tee "${filename}"
 
-	get_count="SELECT TABLE_ROWS as APPROX_ROWS FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='${schema}' AND TABLE_NAME='${table}'"
+	query="
+		DESCRIBE ${schema}.${table};
+		SELECT TABLE_ROWS AS APPROX_ROWS
+		FROM INFORMATION_SCHEMA.TABLES
+		WHERE TABLE_SCHEMA='${schema}'
+		  AND TABLE_NAME='${table}';
+		SHOW CREATE TABLE ${schema}.${table};
+	"
 
 	mysql -A --table \
 		'--connect-expired-password' \
@@ -141,8 +156,8 @@ elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
 		"--user=${!db_user}" \
 		"--password=${!db_pass}" \
 		"--database=${!db_name}" \
-		>> "${filename}" \
-		<<< "describe ${schema}.${table}; ${get_count}; SHOW CREATE TABLE ${schema}.${table};"
+		<<< "${query}" \
+		>> "${filename}"
 
 else
 	usage "Unsupported database: '${db_id}'."
