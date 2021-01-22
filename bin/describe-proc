@@ -58,7 +58,7 @@ gather_env_vars() {
 }
 
 usage() {
-	echo "Describe the specified stored procedure and write to file in sql/{<db_id>}/tables/{schema}/{procedure}.txt" >&2
+	echo "Describe the specified stored procedure and write to file." >&2
 	echo >&2
 	echo "usage:" >&2
 	echo "  $(basename "${0}") <db_id> <schema> <procedure>" >&2
@@ -129,13 +129,13 @@ db_pass=
 db_name=
 
 suffix="$(sed -E -e 's/^[^-]+-?//' <<< "${db_id}")"
-filename="tables/${schema}${suffix:+/}${suffix}/${procedure}.txt"
+filename="tables/${schema}${suffix:+/}${suffix}/procedures/${procedure}.sql"
 
 if [[ "${db_id}" =~ oracle ]]; then
 	usage 'oracle not implemented yet'
 
 	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
-	mkdir -p "tables/${schema}${suffix:+/}${suffix}"
+	mkdir -p "tables/${schema}${suffix:+/}${suffix}/procedures"
 	gather_env_vars
 
 	echo "${schema}.${procedure}" | tee "${filename}"
@@ -151,31 +151,33 @@ if [[ "${db_id}" =~ oracle ]]; then
 
 elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
 	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
-	mkdir -p "tables/${schema}${suffix:+/}${suffix}"
+	mkdir -p "tables/${schema}${suffix:+/}${suffix}/procedures"
 	gather_env_vars
 
-	echo "${schema}.${procedure}" | tee "${filename}"
+	echo "-- ${schema}.${procedure}" | tee "${filename}"
 
-	query="
-		SELECT
-			' ' as 'indent',
-			PARAMETER_MODE,
-			PARAMETER_NAME,
-			CONCAT(
-				DATA_TYPE,
-				'(',CHARACTER_MAXIMUM_LENGTH,')'
-			)
-		FROM information_schema.parameters
-		WHERE SPECIFIC_SCHEMA = '${schema}'
-		  AND SPECIFIC_NAME = '${procedure}'
-		ORDER BY ORDINAL_POSITION
-		;
+	# query="
+	# 	SELECT
+	# 		' ' as 'indent',
+	# 		PARAMETER_MODE,
+	# 		PARAMETER_NAME,
+	# 		CONCAT(
+	# 			DATA_TYPE,
+	# 			'(',CHARACTER_MAXIMUM_LENGTH,')'
+	# 		)
+	# 	FROM information_schema.parameters
+	# 	WHERE SPECIFIC_SCHEMA = '${schema}'
+	# 	  AND SPECIFIC_NAME = '${procedure}'
+	# 	ORDER BY ORDINAL_POSITION
+	# 	;
 
-		SELECT ROUTINE_DEFINITION
-		FROM INFORMATION_SCHEMA.ROUTINES
-		WHERE ROUTINE_SCHEMA = '${schema}'
-		  AND SPECIFIC_NAME = '${procedure}';
-	"
+	# 	SELECT ROUTINE_DEFINITION
+	# 	FROM INFORMATION_SCHEMA.ROUTINES
+	# 	WHERE ROUTINE_SCHEMA = '${schema}'
+	# 	  AND SPECIFIC_NAME = '${procedure}';
+	# "
+
+	query="SHOW CREATE PROCEDURE ${schema}.${procedure}"
 
 	mysql -A -N \
 		'--connect-expired-password' \
@@ -185,7 +187,7 @@ elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
 		"--password=${!db_pass}" \
 		"--database=${!db_name}" \
 		<<< "${query}" \
-		| sed -E -e 's/\\n/\'$'\n''/g' -e 's/'$'\t''/ /g' \
+		| sed -E -e 's/'$'\t''/ /g' -e 's/\\t/    /g' -e 's/\\n/%%/g' -e 's/([^\\])(\\\\)*\\%%/\1\2\\\\n/g' -e 's/%%/\'$'\n''/g' \
 		>> "${filename}"
 
 else
