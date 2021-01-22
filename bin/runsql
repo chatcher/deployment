@@ -94,7 +94,7 @@ db_pass=
 db_name=
 
 set -m
-(sleep 10; kill -15 -$$) &
+(sleep 30; kill -15 -$$) &
 killer=$!
 trap 'kill -- -"${killer}" 2>/dev/null' EXIT
 
@@ -127,7 +127,10 @@ if [[ "${db_id}" =~ oracle ]]; then
 		if prompt 'Execute that as a query?'; then
 			$oracle -L "${login}" <<SQL
 SET SQLFORMAT ANSICONSOLE;
+SET PAGESIZE 1000;
 SET SQLBLANKLINES ON;
+SET LONG 2000;
+ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD HH:MI:SS PM';
 ${sql_file};
 SQL
 		else
@@ -140,11 +143,21 @@ SQL
 
 	elif [ -z "${variables}" ]; then
 		echo -e "${S_CS} Executing SQL file... ${N_CS}" >&2
-		$oracle -S -L "${login}" "@sql/${sql_file}.sql" </dev/null
+		$oracle -S -L "${login}" <<SQL
+SET SQLFORMAT ANSICONSOLE;
+SET PAGESIZE 50000;
+SET SQLBLANKLINES ON;
+ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD HH:MI:SS PM';
+@sql/${sql_file}.sql
+SQL
 
 	else
 		echo -e "${S_CS} Executing SQL script with variables... ${N_CS}" >&2
 		$oracle -S -L "${login}" <<SQL
+SET SQLFORMAT ANSICONSOLE;
+SET PAGESIZE 50000;
+SET SQLBLANKLINES ON;
+ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD HH:MI:SS PM';
 ${variables}
 @sql/${sql_file}.sql
 SQL
