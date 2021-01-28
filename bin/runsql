@@ -85,8 +85,6 @@ if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 db_id="${1}"; shift || :
 sql_file="${1}"; shift || :
 
-
-
 db_host=
 db_port=
 db_user=
