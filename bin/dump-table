@@ -1,0 +1,154 @@
+#!/usr/bin/env bash
+
+set -e
+# set -x
+
+gather_env_vars() {
+	re="$(sed -E -e 's/[^a-z]/./g' <<< "${db_id}" | tr '[:lower:]' '[:upper:]')"
+
+	while read -u 3 -r line; do
+		if [[ "${line}" =~ ^[a-zA-Z0-9._-]+= ]]; then
+			var="${line%=*}"
+			val="${line#*=}"
+
+			if [[ "${var}" =~ HOST ]] && [[ "${val}" =~ $db_id ]]; then
+				# echo -e "${D_CS} '${var}' = '${val}' ${N_CS}" >&2
+
+				# Found what looks like a database host
+				if [ -z "${db_host}" ]; then
+					# echo -e "${D_CS} using that ${N_CS}" >&2
+					db_host="${var}"
+				elif [[ "${var}" =~ $re ]]; then
+					# echo -e "${D_CS} switching ${N_CS}" >&2
+					db_host="${var}"
+				else
+					# but we already have one picked out
+					# echo -e "${D_CS} skipping that ${N_CS}" >&2
+					:
+				fi
+			fi
+		fi
+	done 3<<< "$(env)"
+
+	if [ -z "${db_host}" ]; then usage 'Failed to figure out a database variable for the host.'; fi
+
+	# db_host="${db_host}"
+	db_port="${db_host/HOST/PORT}"
+	db_user="${db_host/HOST/USER}"
+	db_pass="${db_host/HOST/PASSWORD}"
+	db_name="${db_host/HOST/DATABASE}"
+
+	if [ -z "${db_port}" ]; then usage 'Failed to figure out a database variable for the port.'; fi
+	if [ -z "${db_user}" ]; then usage 'Failed to figure out a database variable for the user.'; fi
+	if [ -z "${db_pass}" ]; then usage 'Failed to figure out a database variable for the pass.'; fi
+	if [ -z "${db_name}" ]; then usage 'Failed to figure out a database variable for the name.'; fi
+
+
+	if [ -z "${!db_host}" ]; then usage "Picked up ${db_host} for the host, but it has no value.'"; fi
+	if [ -z "${!db_port}" ]; then usage "Picked up ${db_port} for the port, but it has no value.'"; fi
+	if [ -z "${!db_user}" ]; then usage "Picked up ${db_user} for the user, but it has no value.'"; fi
+	if [ -z "${!db_pass}" ]; then usage "Picked up ${db_pass} for the pass, but it has no value.'"; fi
+	if [ -z "${!db_name}" ]; then usage "Picked up ${db_name} for the name, but it has no value.'"; fi
+
+	echo -e "${K_CS} Using ${db_host} = ${!db_host} ${N_CS}" >&2
+	echo -e "${K_CS} Using ${db_port} = ${!db_port} ${N_CS}" >&2
+	echo -e "${K_CS} Using ${db_user} = ${!db_user} ${N_CS}" >&2
+	echo -e "${K_CS} Using ${db_pass} = ${!db_pass} ${N_CS}" >&2
+	echo -e "${K_CS} Using ${db_name} = ${!db_name} ${N_CS}" >&2
+}
+
+usage() {
+	echo "Describe the specified table and write to file in sql/{<db_id>}/tables/{schema}/{table}.txt" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <db_id> <schema> <table>" >&2
+	echo >&2
+	echo "parameters:" >&2
+	echo "  db_id" >&2
+	echo "        The type of database to run the query against. E.g. 'oracle'" >&2
+	echo "  schema" >&2
+	echo "        The name of the database to run the query in. E.g. 'common'" >&2
+	echo "  table" >&2
+	echo "        The name of the table to describe" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+
+db_id="${1}"
+schema="${2}"
+table="${3}"
+
+if [ -z "${3}" ]; then
+	# schema and table were (presumably) provided in dotted format
+	schema="${2%.*}"
+	if [[ "${2}" =~ \. ]]; then
+		table="${2#*.}"
+	fi
+fi
+
+if [ -z "${db_id}" ]; then usage 'Database identifier required'; fi
+if [ -z "${schema}" ]; then usage 'Schema name required'; fi
+if [ -z "${table}" ]; then
+	while read -u 3 -r line; do
+		table="$(sed -E -e 's/[^A-Za-z0-9_]//g' <<< "${line}")"
+		if [ -n "${table}" ]; then
+			echo -e "${S_CS} ${table} ${N_CS}" >&2
+			$0 "$@" "${table}"
+		fi
+	done 3<<< "$(runsql "${db_id}" "use ${schema}; show tables" <<< 'y' | tail -n +3)"
+	exit
+fi
+
+schema="$(tr '[:lower:]' '[:upper:]' <<< "${schema}")"
+table="$(tr '[:lower:]' '[:upper:]' <<< "${table}")"
+
+db_host=
+db_port=
+db_user=
+db_pass=
+db_name=
+
+suffix="$(sed -E -e 's/^[^-]+-?//' <<< "${db_id}")"
+filename="tables/${schema}${suffix:+/}${suffix}/${table}.txt"
+
+if [[ "${db_id}" =~ oracle ]]; then
+	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
+	mkdir -p "tables/${schema}${suffix:+/}${suffix}"
+	gather_env_vars
+
+	oracle='/Users/chad.hatcher/sqlcl/bin/sql'
+	login="${!db_user}/${!db_pass}@//${!db_host}:${!db_port}/${!db_name}"
+	query="
+		SELECT * FROM ${schema}.${table};
+	"
+
+	$oracle -S -L "${login}" <<< "$query" >> "${filename}"
+
+elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
+	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
+	mkdir -p "tables/${schema}${suffix:+/}${suffix}"
+	gather_env_vars
+
+	query="
+		SELECT * FROM ${schema}.${table};
+	"
+
+	mysql -A --table \
+		'--connect-expired-password' \
+		"--host=${!db_host}" \
+		"--port=${!db_port}" \
+		"--user=${!db_user}" \
+		"--password=${!db_pass}" \
+		"--database=${!db_name}" \
+		<<< "${query}" \
+		>> "${filename}"
+
+else
+	usage "Unsupported database: '${db_id}'."
+fi
