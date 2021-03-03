@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# set -x
+
 preamble() {
 	clear
 	clear
@@ -45,8 +47,11 @@ if ! [ -f "${filename}" ]; then
 fi
 
 npx='npx'
+nyc=''
 
 if [ "$(jq -rc '.engines.yarn' package.json)" != 'null' ]; then npx=yarn; fi
+if [ "$(jq -rc '.devDependencies.nyc' package.json)" != 'null' ]; then nyc='nyc'; fi
+if [ "$(jq -rc '.devDependencies.istanbul' package.json)" != 'null' ]; then nyc='istanbul'; fi
 
 dev_script="$(jq -rc '.scripts.dev' package.json)"
 start_script="$(jq -rc '.scripts.start' package.json)"
@@ -72,7 +77,7 @@ if [ -d 'common' ]; then watch_dir="${watch_dir},common"; fi
 
 mode="${1:-default}"
 
-echo -e "${K_CS} npx mode: ${npx} ${mode} ${N_CS}" >&2
+echo -e "${K_CS} ${mode} ${npx} ${nyc} ${N_CS}" >&2
 echo -e "${K_CS} test_path: ${test_path} ${N_CS}" >&2
 echo -e "${K_CS} watch_dirs: ${watch_dirs[*]} ${N_CS}" >&2
 
@@ -93,49 +98,66 @@ if [[ "${mode}" =~ default ]]; then
 	else
 		echo -e "dev_script:     '${dev_script}'" >&2
 		echo -e "start_script:   '${start_script}'" >&2
-		usage 'I dunno how run'
+		usage 'I dunno how to run'
 	fi
 
 elif [[ "${mode}" =~ test ]]; then
-	if [[ "${test_script}" =~ mocha ]]; then
-		preamble "Testing via ${npx} nyc mocha watch=true"
+	if [ "${test_script}" = 'ng test' ]; then
+		preamble "Testing via ${npx} ng test watch=true"
+		$npx ng test --watch=true --code-coverage --source-map
+
+	elif [[ "${test_script}" =~ mocha ]]; then
+		preamble "Testing via ${npx} ${nyc} mocha watch=true"
+		set -x
 		if [ "${npx}" = 'yarn' ]
 		then temp_env 'development' 'warn'
 		else temp_env 'UNIT_TEST' 'warn'
 		fi
-		if [ "${npx}" = 'yarn' ]
-		then $npx nyc --reporter=lcov mocha "${test_path}" --exit
-		else $npx nyc --reporter=lcov mocha "${test_path}" -w "${watch_dirs[*]}"
+		if [ "${nyc}" = 'nyc' ]; then
+			if [ "${npx}" = 'yarn' ]
+			then $npx "${nyc}" --reporter=lcov mocha -b "${test_path}" --exit
+			else $npx "${nyc}" --reporter=lcov mocha -b "${test_path}" --recursive -w "${watch_dirs[*]}"
+			fi
+		elif [ "${nyc}" = 'istanbul' ]; then
+			if [ "${npx}" = 'yarn' ]
+			then $npx mocha -b "${test_path}" --exit
+			else $npx mocha -b "${test_path}" -w "${watch_dirs[*]}"
+			fi
+		else
+			usage 'I dunno what to do with this.';
 		fi
-
-	elif [ "${test_script}" = 'ng test' ]; then
-		preamble "Testing via ${npx} ng test watch=true"
-		$npx ng test --watch=true --code-coverage --source-map
 
 	elif [ "${test_script}" != 'null' ]; then
 		echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
 		echo "${test_script}" >&2
-		echo -e "${E_CS}but I'm not sure. ${N_CS}" >&2
+		echo -e "${E_CS}but, I'm not sure. ${N_CS}" >&2
 
 	else
-		usage 'I dunno how test'
+		usage 'I dunno how to test'
 	fi
 
 elif [[ "${mode}" =~ cover ]]; then
 	rm -rf './coverage'
 
-	if [[ "${test_script}" =~ mocha ]]; then
-		preamble "Testing via ${npx} nyc mocha watch=false"
+	if [ "${test_script}" = 'ng test' ]; then
+		preamble "Testing via ${npx} ng test watch=false"
+		$npx ng test --watch=false --code-coverage --source-map
+
+	elif [[ "${test_script}" =~ mocha ]]; then
+		preamble "Testing via ${npx} ${nyc} mocha watch=false"
 		if [ "${npx}" = 'yarn' ]
 		then temp_env 'development' 'warn'
 		else temp_env 'UNIT_TEST' 'warn'
 		fi
-		$npx nyc --reporter=lcov mocha "${test_path}" --exit
-		 # --recursive 'src/api/**/*-test.js'
 
-	elif [ "${test_script}" = 'ng test' ]; then
-		preamble "Testing via ${npx} ng test watch=false"
-		$npx ng test --watch=false --code-coverage --source-map
+		# echo butts $npx $nyc
+		if [ "${nyc}" = 'nyc' ]; then
+			$npx "${nyc}" --reporter=lcov mocha "${test_path}" --exit
+		elif [ "${nyc}" = 'istanbul' ]; then
+			$npx "${nyc}" cover _mocha --report lcov -- -R spec "${test_path}" --recursive --exit
+		else
+			$npx mocha "${test_path}" --exit
+		fi
 
 	elif [ "${test_script}" != 'null' ]; then
 		echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
@@ -143,7 +165,7 @@ elif [[ "${mode}" =~ cover ]]; then
 		echo -e "${E_CS}but I'm not sure. ${N_CS}" >&2
 
 	else
-		usage 'I dunno how cover'
+		usage 'I dunno how to cover'
 	fi
 
 	if [ -f './coverage/lcov-report/index.html' ]; then
@@ -154,33 +176,35 @@ elif [[ "${mode}" =~ cover ]]; then
 		echo -e "${W_CS} Dunno where the coverage report is. ${N_CS}" >&2
 	fi
 
-
 elif [[ "${mode}" =~ stage ]]; then
 	rm -rf './coverage' >&2
-	git checkout docs/v1/swagger* >&2
+	if [ -d 'docs/v1' ]; then git checkout docs/v1/swagger* >&2; fi
 	git stash --keep-index >&2
+
+	run test || :
+
 	# !! apply and drop stage after running tests
 
-	if [[ "${test_script}" =~ mocha ]]; then
-		preamble "Testing via ${npx} nyc mocha watch=false"
-		if [ "${npx}" = 'yarn' ]
-		then temp_env 'development' 'warn'
-		else temp_env 'UNIT_TEST' 'warn'
-		fi
-		$npx nyc --reporter=lcov mocha --exit --recursive 'src/api/**/*.test.js'
+	# if [[ "${test_script}" =~ mocha ]]; then
+	# 	preamble "Testing via ${npx} ${nyc} mocha watch=false"
+	# 	if [ "${npx}" = 'yarn' ]
+	# 	then temp_env 'development' 'warn'
+	# 	else temp_env 'UNIT_TEST' 'warn'
+	# 	fi
+	# 	$npx "${nyc}" --reporter=lcov mocha --exit --recursive 'src/api/**/*.test.js'
 
-	elif [ "${test_script}" = 'ng test' ]; then
-		preamble "Testing via ${npx} ng test watch=false"
-		$npx ng test --watch=false --code-coverage --source-map
+	# elif [ "${test_script}" = 'ng test' ]; then
+	# 	preamble "Testing via ${npx} ng test watch=false"
+	# 	$npx ng test --watch=false --code-coverage --source-map
 
-	elif [ "${test_script}" != 'null' ]; then
-		echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
-		echo "${test_script}" >&2
-		echo -e "${E_CS}but I'm not sure. ${N_CS}" >&2
+	# elif [ "${test_script}" != 'null' ]; then
+	# 	echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
+	# 	echo "${test_script}" >&2
+	# 	echo -e "${E_CS}but I'm not sure. ${N_CS}" >&2
 
-	else
-		usage 'I dunno how cover'
-	fi
+	# else
+	# 	usage 'I dunno how cover'
+	# fi
 
 	git stash apply >&2
 	git stash drop >&2
@@ -193,10 +217,10 @@ elif [[ "${mode}" =~ stage ]]; then
 	# 	echo -e "${W_CS} Dunno where the coverage report is. ${N_CS}" >&2
 	# fi
 
-
 elif [[ "${mode}" =~ check ]]; then
 
 	echo -e "npx:            '${npx}'" >&2
+	echo -e "nyc:            '${nyc}'" >&2
 	echo >&2
 	echo -e "dev_script:     '${dev_script}'" >&2
 	echo -e "start_script:   '${start_script}'" >&2
@@ -209,45 +233,57 @@ elif [[ "${mode}" =~ check ]]; then
 
 	echo -e "${S_CS} (default) ${N_CS}" >&2
 	if [[ "${dev_script}" =~ nodemon ]]; then
-		echo -e "\t"  npx nodemon ./server/server.js --watch server --watch common >&2
 		echo -e "\t" $npx nodemon "./${main_script}" "${watch_dirs[@]}"
-		echo -e "\t" yarn nodemon ./src/index.js --watch src/api --watch src/config >&2
-	elif [ "${dev_script}" != 'null' ]; then
-		echo -e "\t" npm run dev
 	elif [ "${start_script}" != 'null' ]; then
 		echo -e "\t" npm start
 	else
-		echo -e "\t" usage "'I dunno how run'"
+		echo -e "\t" usage "'I dunno how to run'"
 	fi
 
 	echo -e "${S_CS} test ${N_CS}" >&2
 	if [ "${test_script}" = 'ng test' ]; then
 		echo -e "\t" $npx ng test --watch=true --code-coverage --source-map
+
 	elif [[ "${test_script}" =~ mocha ]]; then
-		echo -e "\t"  npx nyc --reporter=lcov    npx   mocha --recursive server/tests           -w --watch-files server,common >&2
-		echo -e "\t" $npx nyc --reporter=lcov "${npx}" mocha --recursive "${test_path}"         -w --watch-files "${watch_dir}"
-		echo -e "\t" yarn nyc --reporter=lcov    yarn  mocha --recursive 'src/api/**/*.test.js' -w --watch-files src/api >&2
+		if [ -z "${nyc}" ]; then
+			if [ "${npx}" = 'yarn' ]
+			then echo -e "\t" $npx mocha -b "${test_path}" --exit
+			else echo -e "\t" $npx mocha -b "${test_path}" -w "${watch_dirs[*]}"
+			fi
+		else
+			if [ "${npx}" = 'yarn' ]
+			then echo -e "\t" $npx "${nyc}" --reporter=lcov mocha -b "${test_path}" --exit
+			else echo -e "\t" $npx "${nyc}" --reporter=lcov mocha -b "${test_path}" -w "${watch_dirs[*]}"
+			fi
+		fi
+
 	elif [ "${test_script}" != 'null' ]; then
-		echo -e "\t" usage "'maybe just npm run test'"
+		echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
+		echo "${test_script}" >&2
+		echo -e "${E_CS}but, I'm not sure. ${N_CS}" >&2
 	else
-		echo -e "\t" usage "'I dunno how test'"
+		echo -e "\t" usage "'I dunno how to test'"
 	fi
 
 	echo -e "${S_CS} cover ${N_CS}" >&2
 	if [ "${test_script}" = 'ng test' ]; then
 		echo -e "\t" $npx ng test --watch=false --code-coverage --source-map
 	elif [[ "${test_script}" =~ mocha ]]; then
-		echo -e "\t"  npx nyc --reporter=lcov    npx   mocha --exit --recursive server/tests >&2
-		echo -e "\t" $npx nyc --reporter=lcov "${npx}" mocha --exit --recursive "${test_path}"
-		echo -e "\t" yarn nyc --reporter=lcov    yarn  mocha --exit --recursive 'src/api/**/*.test.js' >&2
+		if [ "${nyc}" = 'nyc' ]; then
+			$npx "${nyc}" --reporter=lcov mocha "${test_path}" --exit
+		elif [ "${nyc}" = 'istanbul' ]; then
+			$npx "${nyc}" cover _mocha -report lcovonly -- -R spec "${test_path}" --recursive --exit
+		else
+			$npx mocha "${test_path}" --exit
+		fi
 	elif [ "${test_script}" != 'null' ]; then
 		echo -e "\t" usage "'maybe just npm run test'"
 	else
-		echo -e "\t" usage "'I dunno how cover'"
+		echo -e "\t" usage "'I dunno how to cover'"
 	fi
 
 else
-	usage "I dunno how to $mode"
+	usage "I dunno how to ${mode}"
 fi
 
 echo -e "${S_CS} Okay, all done. ${N_CS}" >&2
