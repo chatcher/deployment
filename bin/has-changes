@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
-count="$(git diff --name-only 2>/dev/null | wc -l | sed -E -e 's/[[:space:]]//g')"
+# count="$(git diff --name-only 2>/dev/null | wc -l | sed -E -e 's/[[:space:]]//g')"
+count="$(git status --porcelain 2>/dev/null | wc -l | sed -E -e 's/[[:space:]]//g')"
 
 if (( count == 0 )); then exit 1; fi
