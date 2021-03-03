@@ -131,7 +131,7 @@ if [[ "${db_id}" =~ oracle ]]; then
 		SELECT COUNT(*) FROM ${schema}.${table};
 	"
 
-	$oracle -S -L "${login}" <<< "$query" >> "${filename}"
+	$oracle -S -L "${login}" <<< "$query" | tee -a "${filename}"
 
 elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
 	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
@@ -157,7 +157,7 @@ elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
 		"--password=${!db_pass}" \
 		"--database=${!db_name}" \
 		<<< "${query}" \
-		>> "${filename}"
+		| tee -a "${filename}"
 
 else
 	usage "Unsupported database: '${db_id}'."
