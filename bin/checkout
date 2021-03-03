@@ -3,6 +3,8 @@
 set -e
 set -x
 
+#  todo: maybe detect when should clone instead
+
 delete_branch_like_a_jerk() {
 	branch="${1}"
 	if prompt "Are you sure you want to delete ${branch}?"; then
