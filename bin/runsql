@@ -105,13 +105,17 @@ if [[ "${db_id}" =~ oracle ]]; then
 	oracle='/Users/chad.hatcher/sqlcl/bin/sql'
 	login="${!db_user}/\"${!db_pass}\"@//${!db_host}:${!db_port}/${!db_name}"
 
-	variables=""
-	while (( $# > 0 )); do
-		if [ -n "${1}" ]; then
-			variables="DEFINE $(sed -E -e "s/=(.*)/ = '\1'/" <<< "${1}")\n${variables}"
-		fi
-		shift
-	done
+  variables=""
+  var_id=1
+  while (( $# > 0 )); do
+    if [[ "${1}" =~ .=. ]]; then
+      variables="DEFINE $(sed -E -e "s/=(.*)/ = '\1'/" <<< "${1}")\n${variables}"
+    elif [ -n "${1}" ]; then
+      variables="DEFINE arg${var_id} = '${1}'\n${variables}"
+      var_id=$(( var_id + 1))
+    fi
+    shift
+  done
 
 	if [ -z "${sql_file}" ]; then
 		echo -e "${S_CS} Connecting to database... ${N_CS}" >&2
@@ -168,13 +172,17 @@ elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
 	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
 	gather_env_vars
 
-	variables=""
-	while (( $# > 0 )); do
-		if [ -n "${1}" ]; then
-			variables="set @$(sed -E -e "s/=(.*)/='\1'/" <<< "${1}"); ${variables}"
-		fi
-		shift
-	done
+  variables=""
+  var_id=1
+  while (( $# > 0 )); do
+    if [[ "${1}" =~ .=. ]]; then
+      variables="set @$(sed -E -e "s/=(.*)/='\1'/" <<< "${1}");\n${variables}"
+    elif [ -n "${1}" ]; then
+      variables="set @arg${var_id} = '${1}';\n${variables}"
+      var_id=$(( var_id + 1))
+    fi
+    shift
+  done
 
 	if [ -z "${sql_file}" ]; then
 		echo -e "${S_CS} Connecting to database... ${N_CS}" >&2
