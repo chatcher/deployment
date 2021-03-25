@@ -8,12 +8,26 @@ preamble() {
 	echo -e "${S_CS} ${1} ${N_CS}" >&2
 }
 
+pass() {
+	echo -e "${S_CS} pass ${N_CS}" >&2
+}
+
+fail() {
+	echo -e "${E_CS} fail ${N_CS}" >&2
+}
+
 temp_env() {
+	source ~/.env
+
 	node_env="${NODE_ENV}"
 	log_level="${LOG_LEVEL}"
 	export NODE_ENV="${1:-$node_env}"
 	export LOG_LEVEL="${2:-$log_level}"
 	trap 'export NODE_ENV="${node_env}"; export LOG_LEVEL="${log_level}";' EXIT
+
+	if [ -e './.env' ]; then
+		source ./.env
+	fi
 }
 
 usage() {
@@ -108,23 +122,25 @@ elif [[ "${mode}" =~ test ]]; then
 
 	elif [[ "${test_script}" =~ mocha ]]; then
 		preamble "Testing via ${npx} ${nyc} mocha watch=true"
-		set -x
 		if [ "${npx}" = 'yarn' ]
 		then temp_env 'development' 'warn'
 		else temp_env 'UNIT_TEST' 'warn'
 		fi
+
 		if [ "${nyc}" = 'nyc' ]; then
 			if [ "${npx}" = 'yarn' ]
-			then $npx "${nyc}" --reporter=lcov mocha -b "${test_path}" --exit
-			else $npx "${nyc}" --reporter=lcov mocha -b "${test_path}" --recursive -w "${watch_dirs[*]}"
+			then $npx "${nyc}" --reporter=lcov mocha -b "${test_path}" --exit && pass || fail
+			else $npx "${nyc}" --reporter=lcov mocha -b "${test_path}" --recursive -w "${watch_dirs[*]}" && pass || fail
 			fi
+
 		elif [ "${nyc}" = 'istanbul' ]; then
 			if [ "${npx}" = 'yarn' ]
-			then $npx mocha -b "${test_path}" --exit
-			else $npx mocha -b "${test_path}" -w "${watch_dirs[*]}"
+			then $npx mocha -b "${test_path}" --exit && pass || fail
+			else $npx mocha -b "${test_path}" -w "${watch_dirs[*]}" && pass || fail
 			fi
+
 		else
-			usage 'I dunno what to do with this.';
+			usage 'I dunno what to do with this.'
 		fi
 
 	elif [ "${test_script}" != 'null' ]; then
@@ -134,6 +150,40 @@ elif [[ "${mode}" =~ test ]]; then
 
 	else
 		usage 'I dunno how to test'
+	fi
+
+elif [[ "${mode}" =~ once ]]; then
+	if [ "${test_script}" = 'ng test' ]; then
+		preamble "Testing via ${npx} ng test watch=false"
+		$npx ng test --watch=false --code-coverage --source-map
+
+	elif [[ "${test_script}" =~ mocha ]]; then
+		preamble "Testing via ${npx} ${nyc} mocha watch=false"
+		if [ "${npx}" = 'yarn' ]
+		then temp_env 'development' 'warn'
+		else temp_env 'UNIT_TEST' 'warn'
+		fi
+
+		if [ "${nyc}" = 'nyc' ]; then
+			if [ "${npx}" = 'yarn' ]
+			then $npx "${nyc}" --reporter=lcov mocha "${test_path}" --exit && pass || fail
+			else $npx "${nyc}" --reporter=lcov mocha "${test_path}" --recursive --exit && pass || fail
+			fi
+
+		elif [ "${nyc}" = 'istanbul' ]; then
+			$npx mocha "${test_path}" --exit && pass || fail
+
+		else
+			usage 'I dunno what to do with this.'
+		fi
+
+	elif [ "${test_script}" != 'null' ]; then
+		echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
+		echo "${test_script}" >&2
+		echo -e "${E_CS}but I'm not sure. ${N_CS}" >&2
+
+	else
+		usage 'I dunno how to run once'
 	fi
 
 elif [[ "${mode}" =~ cover ]]; then
@@ -150,11 +200,14 @@ elif [[ "${mode}" =~ cover ]]; then
 		else temp_env 'UNIT_TEST' 'warn'
 		fi
 
-		# echo butts $npx $nyc
 		if [ "${nyc}" = 'nyc' ]; then
-			$npx "${nyc}" --reporter=lcov mocha "${test_path}" --exit
+			if [ "${npx}" = 'yarn' ]
+			then $npx "${nyc}" --reporter=lcov mocha "${test_path}" --exit
+			else $npx "${nyc}" --reporter=lcov mocha "${test_path}" --recursive --exit
+			fi
+
 		elif [ "${nyc}" = 'istanbul' ]; then
-			$npx "${nyc}" cover _mocha --report lcov -- -R spec "${test_path}" --recursive --exit
+	    $npx "${nyc}" cover _mocha --report lcov -- -R spec "${test_path}" --recursive --exit
 		else
 			$npx mocha "${test_path}" --exit
 		fi
@@ -165,7 +218,7 @@ elif [[ "${mode}" =~ cover ]]; then
 		echo -e "${E_CS}but I'm not sure. ${N_CS}" >&2
 
 	else
-		usage 'I dunno how to cover'
+		usage 'I dunno how to run cover'
 	fi
 
 	if [ -f './coverage/lcov-report/index.html' ]; then
