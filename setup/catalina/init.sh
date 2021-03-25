@@ -24,3 +24,8 @@ nvm install 10
 nvm install 12
 
 nvm alias default=8
+
+# SET GIT CONFIGURATION
+git config --global user.name "Chad Hatcher"
+git config --global user.email "hackenslacker@gmail.com"
+git config --global diff.wsErrorHighlight all
