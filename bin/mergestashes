@@ -4,15 +4,15 @@ set -e
 set -x
 
 squish_stash() {
-	git stash apply || prompt 'You wanna fix that crap?'
-	git stash drop
-	git add .
+	git stash apply >&2 || prompt 'You wanna fix that crap?'
+	git stash drop >&2
+	git add . >&2
 
 	if has-staged-changes; then
-		git commit --no-verify -m "$(date +%s)"
+		git commit --no-verify -m "$(date +%s)" >&2
 
 	else
-		echo -e  "${S_CS} Okay, that one ended up being empty. ${N_CS}" >&2
+		echo -e  "${W_CS} Okay, that one ended up being empty. ${N_CS}" >&2
 	fi
 }
 
