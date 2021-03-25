@@ -28,6 +28,7 @@ echo
 echo "Configuring some stuff"
 git config --global user.name "Chad Hatcher"
 git config --global user.email "hackenslacker@gmail.com"
+git config --global diff.wsErrorHighlight all
 mkdir .ssh && chmod 700 .ssh && ssh-keygen
 cat .ssh/*pub
 
