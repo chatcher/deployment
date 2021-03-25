@@ -18,7 +18,11 @@ usage() {
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
 if has-changes; then
-  git stash create -u >&1
-  git reset --hard >&2
-  git clean -fd >&2
+  # git stash create -u >&1
+  # git reset --hard >&2
+  # git clean -fd >&2
+  # git checkout . >&2
+
+  git stash -u >&2
+  echo 1
 fi
