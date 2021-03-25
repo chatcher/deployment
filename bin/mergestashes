@@ -10,9 +10,11 @@ squish_stash() {
 
 	if has-staged-changes; then
 		git commit --no-verify -m "$(date +%s)" >&2
+		echo '1'
 
 	else
 		echo -e  "${W_CS} Okay, that one ended up being empty. ${N_CS}" >&2
+		echo '0'
 	fi
 }
 
@@ -36,8 +38,8 @@ git checkout -b "tmp/$(date +%s)"
 stashcount="$(git stash list | wc -l | tr -d ' ')"
 stashindex=0
 while (( stashindex < stashcount )); do
-	squish_stash
-	stashindex="$(( stashindex + 1 ))"
+	increment="$(squish_stash)"
+	stashindex="$(( stashindex + increment ))"
 done
 
 echo -e "${I_CS} Merged ${stashindex} / ${stashcount} stashes ${N_CS}"
