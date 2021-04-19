@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-set -e
-set -x
+# set -e
+# set -x
 
 delete_branch_like_a_jerk() {
 	branch="${1}"
@@ -38,8 +38,25 @@ usage() {
 }
 
 git_clone() {
-	echo -e "${S_CS} Cloning... ${N_CS}" >&2
-	git clone "${1}"
+	name="${1##*/}"
+
+	if ! [ -d "${name}" ]; then
+		echo -e "${S_CS} Cloning ${name}... ${N_CS}" >&2
+		git clone "${1}" >&2
+	else
+		usage "${name} already exists."
+	fi
+
+	cd "${name}" || usage "I guess cloning didn't work."
+	nvm i
+
+	if [ -f 'yarn.lock' ]; then
+		yarn
+	elif [ -f 'package-lock.json' ]; then
+		npm i
+	else
+		echo "${S_CS} No lock file ${N_CS}" >&2
+	fi
 }
 
 git_checkout() {
@@ -95,12 +112,14 @@ git_checkout() {
 	fi
 }
 
+owd="$(pwd)"
 while ! [ -d '.git' ] && [ "$(pwd)" != '/' ]; do
 	cd ..
 done
 
 if [[ "${1}" =~ ^https?:// ]]; then
 	if ! [ -d '.git' ]; then
+		cd "${owd}" || usage 'I got lost on my way home'
 		git_clone "$@"
 	else
 		usage 'Are you trying to use a branch with that name? Suspicious...'
