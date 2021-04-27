@@ -91,10 +91,10 @@ db_user=
 db_pass=
 db_name=
 
-set -m
-(sleep 30; kill -15 -$$) &
-killer=$!
-trap 'kill -- -"${killer}" 2>/dev/null' EXIT
+# set -m
+# (sleep 30; kill -15 -$$) &
+# killer=$!
+# trap 'kill -- -"${killer}" 2>/dev/null' EXIT
 
 
 if [[ "${db_id}" =~ oracle ]]; then
