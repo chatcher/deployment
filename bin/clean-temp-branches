@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+set -e
+
+usage() {
+  echo "Delete all temp branches." >&2
+  echo "usage:" >&2
+  echo "  $(basename "${0}")" >&2
+
+  if [ -n "$1" ]; then echo "error: ${1}" >&2; fi
+
+  exit 1
+}
+
+while read -u 3 -r branch; do
+  if [[ "${branch}" =~ ^tmp ]]; then
+    git branch -d "${branch}"
+  fi
+
+done 3<<< "$(git branch -l 'tmp/*')"
+
+echo -e "${S_CS} Done ${N_CS}" >&2
