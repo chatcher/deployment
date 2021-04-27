@@ -27,6 +27,10 @@ fi
 
 details="${1}"
 
+if [ -z "${details}" ]; then
+	exit
+fi
+
 pr_number="$(jq -r '.number' <<< "${details}")"
 pr_open="$(jq -r '.open' <<< "${details}" | tr '[:upper:]' '[:lower:]')"
 pr_state="$(jq -r '.state' <<< "${details}" | tr '[:upper:]' '[:lower:]')"
