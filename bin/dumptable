@@ -130,7 +130,7 @@ if [[ "${db_id}" =~ oracle ]]; then
 		SET SQLBLANKLINES ON;
 		SET LONG 2000;
 		ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD HH:MI:SS PM';
-		SELECT * FROM ${schema}.${table} fetch first 50 rows only;
+		SELECT * FROM ${schema}.${table} order by 1, 2 fetch first 100 rows only;
 	"
 
 	$oracle -S -L "${login}" <<< "$query" >> "${filename}"
@@ -141,7 +141,7 @@ elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
 	gather_env_vars
 
 	query="
-		SELECT * FROM ${schema}.${table} limit 50;
+		SELECT * FROM ${schema}.${table} limit 100;
 	"
 
 	mysql -A --table \
