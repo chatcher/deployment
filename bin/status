@@ -46,6 +46,6 @@ line 'pull requests' >&2
 listprs >&2
 
 line 'pull request' >&2
-get-pull-request-number || echo 'none'
+get-pull-request-number >&2 || echo 'none' >&2
 
 line >&2
