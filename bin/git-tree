@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # git log --graph --pretty=reference -n "$(( $(tput lines) - 5 ))"
-git log --graph --pretty='format:%C(auto)%<|(16)%h %C(brightblack)[%as] %<|(48)%al - %Creset %s' -n "$(( $(tput lines) - 5 ))"
+git log --graph --pretty='format:%C(auto)%<|(16)%h %C(brightblack)[%as] %<|(48)%al - %Creset%s' -n "$(( $(tput lines) - 5 ))"
 
 
 
