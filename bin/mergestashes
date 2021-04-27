@@ -35,20 +35,22 @@ if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 git stash -u
 git checkout -b "tmp/$(date +%s)"
 
-stashcount="$(git stash list | wc -l | tr -d ' ')"
+stashlimit="$(git stash list | wc -l | tr -d ' ')"
 stashindex=0
-while (( stashindex < stashcount )); do
+stashcount=0
+while (( stashindex < stashlimit )); do
 	increment="$(squish_stash)"
-	stashindex="$(( stashindex + increment ))"
+	stashindex="$(( stashindex + 1 ))"
+	stashcount="$(( stashcount + increment ))"
 done
 
-echo -e "${I_CS} Merged ${stashindex} / ${stashcount} stashes ${N_CS}"
+echo -e "${I_CS} Merged ${stashcount} / ${stashlimit} stashes ${N_CS}"
 
-if (( stashindex > 0 )); then
+if (( stashcount > 0 )); then
 	reset_to="HEAD"
-	while (( stashindex > 0 )); do
+	while (( stashcount > 0 )); do
 		reset_to="${reset_to}~"
-		stashindex="$(( stashindex - 1 ))"
+		stashcount="$(( stashcount - 1 ))"
 	done
 	git reset "${reset_to}"
 fi
