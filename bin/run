@@ -121,27 +121,78 @@ elif [[ "${mode}" =~ test ]]; then
 		$npx ng test --watch=true --code-coverage --source-map
 
 	elif [[ "${test_script}" =~ mocha ]]; then
-		preamble "Testing via ${npx} ${nyc} mocha watch=true"
 		if [ "${npx}" = 'yarn' ]
-		then temp_env 'development' 'warn'
-		else temp_env 'UNIT_TEST' 'warn'
+		then preamble "Testing via ${npx} ${nyc} mocha [broken watch]"
+		else preamble "Testing via ${npx} ${nyc} mocha watch=true"
 		fi
 
-		if [ "${nyc}" = 'nyc' ]; then
-			if [ "${npx}" = 'yarn' ]
-			then $npx "${nyc}" --reporter=lcov mocha -b "${test_path}" --exit && pass || fail
-			else $npx "${nyc}" --reporter=lcov mocha -b "${test_path}" --recursive -w "${watch_dirs[*]}" && pass || fail
-			fi
+		new_env='UNIT_TEST'
 
-		elif [ "${nyc}" = 'istanbul' ]; then
-			if [ "${npx}" = 'yarn' ]
-			then $npx mocha -b "${test_path}" --exit && pass || fail
-			else $npx mocha -b "${test_path}" -w "${watch_dirs[*]}" && pass || fail
-			fi
+		if [ "${2}" = '--env' ]; then
+			new_env="${3:-development}"
+
+		elif [ "${npx}" = 'yarn' ]; then
+			new_env='development'
+		fi
+
+		temp_env "${new_env}" 'warn'
+
+		runner="${nyc}"
+		reporter='--reporter=lcov'
+		recursive='--exit'
+		watch_switch='-w'
+		watchers="${watch_dirs[*]}"
+
+		if [ "${npx}" = 'yarn' ] && [ "${nyc}" = 'nyc' ]; then
+			# $npx "${nyc}" --reporter=lcov mocha -b "${test_path}" --exit                           && pass || fail
+			# runner="${nyc}"
+			# reporter='--reporter=lcov'
+			# recursive='--exit'
+			watch_switch=''
+			watchers=''
+
+		elif [ "${npx}" = 'yarn' ] && [ "${nyc}" = 'istanbul' ]; then
+			# $npx                          mocha -b "${test_path}" --exit                            && pass || fail
+			runner=''
+			reporter=''
+			# recursive='--exit'
+			watch_switch=''
+			watchers=''
+
+		elif [ "${npx}" = 'npx' ] && [ "${nyc}" = 'nyc' ]; then
+			# $npx "${nyc}" --reporter=lcov mocha -b "${test_path}" --recursive -w "${watch_dirs[*]}" && pass || fail
+			# runner="${nyc}"
+			# reporter='--reporter=lcov'
+			recursive='--recursive'
+			# watch_switch='-w'
+			# watchers="${watch_dirs[*]}"
+
+		elif [ "${npx}" = 'npx' ] && [ "${nyc}" = 'istanbul' ]; then
+			# $npx                          mocha -b "${test_path}"             -w "${watch_dirs[*]}" && pass || fail
+			runner=''
+			reporter=''
+			recursive=''
+			# watch_switch='-w'
+			# watchers="${watch_dirs[*]}"
+
+
+		# if [ "${nyc}" = 'nyc' ]; then
+		# 	if [ "${npx}" = 'yarn' ]
+		# 	then $npx "${nyc}" --reporter=lcov mocha -b "${test_path}" --exit && pass || fail
+		# 	else $npx "${nyc}" --reporter=lcov mocha -b "${test_path}" --recursive -w "${watch_dirs[*]}" && pass || fail
+		# 	fi
+
+		# elif [ "${nyc}" = 'istanbul' ]; then
+		# 	if [ "${npx}" = 'yarn' ]
+		# 	then $npx mocha -b "${test_path}" --exit && pass || fail
+		# 	else $npx mocha -b "${test_path}" -w "${watch_dirs[*]}" && pass || fail
+		# 	fi
 
 		else
 			usage 'I dunno what to do with this.'
 		fi
+
+		$npx "${runner}" "${reporter}" mocha -b "${test_path}" "${recursive}" "${watch_switch}" "${watchers}" && pass || fail
 
 	elif [ "${test_script}" != 'null' ]; then
 		echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
