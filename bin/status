@@ -25,9 +25,10 @@ line() {
 }
 
 line 'versions' >&2
-echo "node: $(node --version)" >&2
-echo "npm:  v$(npm --version)" >&2
-echo "yarn: v$(yarn --version)" >&2
+echo "node: $(node --version)" >&2 &
+echo "npm:  v$(npm --version)" >&2 &
+echo "yarn: v$(yarn --version)" >&2 &
+wait
 
 line 'git stashes' >&2
 git stash list >&2
