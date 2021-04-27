@@ -95,13 +95,21 @@ fi
 if [ -z "${db_id}" ]; then usage 'Database identifier required'; fi
 if [ -z "${schema}" ]; then usage 'Schema name required'; fi
 if [ -z "${table}" ]; then
-	while read -u 3 -r line; do
-		table="$(sed -E -e 's/[^A-Za-z0-9_]//g' <<< "${line}")"
-		if [ -n "${table}" ]; then
-			echo -e "${S_CS} ${table} ${N_CS}" >&2
-			$0 "$@" "${table}"
+	if [[ "${db_id}" =~ oracle ]]; then
+		usage "Describing a whole schema not supported for Oracle."
+	elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
+		if prompt "Describe all tables in ${schema}?"; then
+			while read -u 3 -r line; do
+				table="$(sed -E -e 's/[^A-Za-z0-9_]//g' <<< "${line}")"
+				if [ -n "${table}" ]; then
+					echo -e "${S_CS} ${table} ${N_CS}" >&2
+					$0 "$@" "${table}"
+				fi
+			done 3<<< "$(runsql "${db_id}" "use ${schema}; show tables" <<< 'y' | tail -n +3)"
+		else
+			echo "${S_CS} Okay. ${N_CS}" >&2
 		fi
-	done 3<<< "$(runsql "${db_id}" "use ${schema}; show tables" <<< 'y' | tail -n +3)"
+	fi
 	exit
 fi
 
@@ -127,8 +135,20 @@ if [[ "${db_id}" =~ oracle ]]; then
 	oracle='/Users/chad.hatcher/sqlcl/bin/sql'
 	login="${!db_user}/${!db_pass}@//${!db_host}:${!db_port}/${!db_name}"
 	query="
+		SET SQLFORMAT ANSICONSOLE;
+		SET PAGESIZE 1000;
+		SET SQLBLANKLINES ON;
+		SET LONG 2000;
+		ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD HH:MI:SS PM';
 		DESCRIBE ${schema}.${table};
 		SELECT COUNT(*) FROM ${schema}.${table};
+		SELECT
+			ALL_IND_COLUMNS.INDEX_NAME AS INDEX_NAME,
+			ALL_IND_COLUMNS.COLUMN_NAME AS COLUMN_NAME
+		FROM ALL_IND_COLUMNS
+		WHERE ALL_IND_COLUMNS.TABLE_OWNER = '${schema}'
+			AND ALL_IND_COLUMNS.TABLE_NAME = '${table}'
+		ORDER BY 1, 2;
 	"
 
 	$oracle -S -L "${login}" <<< "$query" | tee -a "${filename}"
