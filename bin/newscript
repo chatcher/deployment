@@ -20,11 +20,12 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-open_after=false
-if [ "${1}" == '-o' ]; then
-	open_after=true
-	shift
-fi
+open_after=true
+# open_after=false
+# if [ "${1}" == '-o' ]; then
+# 	open_after=true
+# 	shift
+# fi
 
 name="${1}"
 
