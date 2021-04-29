@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+set -e
+set -x
+
+usage() {
+	echo "Search all repositories for <query>" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <query>" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+search() {
+	filename="${1}"
+	query="${2}"
+	tracker="${3}"
+	timestamp=0
+	if [ -n "${tracker}" ] && [ -f "${tracker}" ]; then
+		timestamp="$(cat "${tracker}")"
+	fi
+
+	if [ -f "${1}" ]; then
+		discovery="$(grep "${query}" "${filename}")"
+		nowish="$(date +%s )"
+
+		if [ -n "${discovery}" ]; then
+			echo >&2
+			echo -e "${I_CS} ${filename} ${N_CS}" >&2
+			echo "${discovery}" >&2
+		elif (( timestamp < nowish )); then
+			echo -n '.' >&2
+			if [ -n "${tracker}" ] && [ -f "${tracker}" ]; then
+				echo "${nowish}" > "${tracker}"
+			fi
+		fi
+	fi
+}
+export -f search
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+if [ -z "${1}" ]; then usage 'Search query required.'; fi
+
+tracker="$(mktemp)"
+echo "${tracker}"
+ls -lL "${tracker}"
+trap 'rm -rf "${tracker}"' EXIT
+
+find ~/repo -type f -regex '.*\.[jt]s' -not -path '*/node_modules/*' | xargs -I {} bash -c 'search "${@}"' -- {} "${1}" "${tracker}"
+
+echo >&2
+echo -e "${S_CS} done ${N_CS}" >&2
+
+ls -lL "${tracker}"
