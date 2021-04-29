@@ -48,7 +48,10 @@ git_clone() {
 	fi
 
 	cd "${name}" || usage "I guess cloning didn't work."
-	nvm i
+
+	if [ -f '.nvmrc' ]; then
+		nvm i || :
+	fi
 
 	if [ -f 'yarn.lock' ]; then
 		yarn
