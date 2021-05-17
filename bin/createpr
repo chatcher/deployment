@@ -27,10 +27,45 @@ if has-staged-changes; then
 	fi
 fi
 
-
 bodyfile="$(mktemp)"
-printf "%s\n\n" "${*}" > "${bodyfile}"
-if [ -f 'PULL_REQUEST_TEMPLATE.md' ]; then cat 'PULL_REQUEST_TEMPLATE.md' >> "${bodyfile}"; fi
+
+header=()
+infix=()
+while (( $# > 0 )); do
+	line="${1}"
+	echo "${line}" >&2
+	if [[ "${line}" =~ http ]]; then
+		suffix="${line##*/}"
+		header+=("${suffix}")
+		infix+=("[${suffix}](${line})")
+		:
+	else
+		header+=("${line}")
+	fi
+  shift
+done
+
+printf -v content "%s\n" "${infix[@]}"
+
+read -d '' -r template <<TEMPLATE_MD || :
+${header[*]}
+
+# Description
+
+${content%?}
+
+
+
+## Types of changes
+
+- [ ] New feature
+- [ ] Bug fix
+- [ ] Breaking change
+- [ ] Refactor
+- [ ] Test coverage
+- [ ] Documentation
+TEMPLATE_MD
+printf "%s\n" "${template}" > "${bodyfile}"
 nano "${bodyfile}"
 
 title="$(head -n 1 "${bodyfile}" | sed -e 's/"/\\"/g')"
