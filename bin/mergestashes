@@ -32,6 +32,8 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
+initial="$(get-current-branch)"
+
 git stash -u
 git checkout -b "tmp/$(date +%s)"
 
@@ -54,3 +56,5 @@ if (( stashcount > 0 )); then
 	done
 	git reset "${reset_to}"
 fi
+
+git checkout "${initial}"
