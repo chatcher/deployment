@@ -287,7 +287,7 @@ elif [[ "${mode}" =~ stage ]]; then
 	rm -rf './.nyc_output' >&2
 	if [ -d 'docs/v1' ]; then git checkout docs/v1/swagger* >&2; fi
 	git stash --keep-index >&2
-	run test || :
+	run once || :
 	git stash apply --index >&2
 	git stash drop >&2
 
