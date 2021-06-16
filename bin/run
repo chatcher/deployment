@@ -287,42 +287,9 @@ elif [[ "${mode}" =~ stage ]]; then
 	rm -rf './.nyc_output' >&2
 	if [ -d 'docs/v1' ]; then git checkout docs/v1/swagger* >&2; fi
 	git stash --keep-index >&2
-
 	run test || :
-
-	# !! apply and drop stage after running tests
-
-	# if [[ "${test_script}" =~ mocha ]]; then
-	# 	preamble "Testing via ${npx} ${nyc} mocha watch=false"
-	# 	if [ "${npx}" = 'yarn' ]
-	# 	then temp_env 'development' 'warn'
-	# 	else temp_env 'UNIT_TEST' 'warn'
-	# 	fi
-	# 	$npx "${nyc}" --reporter=lcov mocha --exit --recursive 'src/api/**/*.test.js'
-
-	# elif [ "${test_script}" = 'ng test' ]; then
-	# 	preamble "Testing via ${npx} ng test watch=false"
-	# 	$npx ng test --watch=false --code-coverage --source-map
-
-	# elif [ "${test_script}" != 'null' ]; then
-	# 	echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
-	# 	echo "${test_script}" >&2
-	# 	echo -e "${E_CS}but I'm not sure. ${N_CS}" >&2
-
-	# else
-	# 	usage 'I dunno how cover'
-	# fi
-
 	git stash apply >&2
 	git stash drop >&2
-
-	# if [ -f './coverage/lcov-report/index.html' ]; then
-	# 	open -a 'Google Chrome' './coverage/lcov-report/index.html'
-	# elif [ -f './coverage/index.html' ]; then
-	# 	open -a 'Google Chrome' './coverage/index.html'
-	# else
-	# 	echo -e "${W_CS} Dunno where the coverage report is. ${N_CS}" >&2
-	# fi
 
 elif [[ "${mode}" =~ check ]]; then
 
