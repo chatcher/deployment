@@ -21,6 +21,8 @@ temp_env() {
 
 	node_env="${NODE_ENV}"
 	log_level="${LOG_LEVEL}"
+
+	export DYLD_LIBRARY_PATH="${HOME}/lib"
 	export NODE_ENV="${1:-$node_env}"
 	export LOG_LEVEL="${2:-$log_level}"
 	trap 'export NODE_ENV="${node_env}"; export LOG_LEVEL="${log_level}";' EXIT
