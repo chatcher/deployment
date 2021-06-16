@@ -284,6 +284,7 @@ elif [[ "${mode}" =~ cover ]]; then
 
 elif [[ "${mode}" =~ stage ]]; then
 	rm -rf './coverage' >&2
+	rm -rf './.nyc_output' >&2
 	if [ -d 'docs/v1' ]; then git checkout docs/v1/swagger* >&2; fi
 	git stash --keep-index >&2
 
