@@ -132,22 +132,36 @@ suffix="$(sed -E -e 's/^[^-]+-?//' <<< "${db_id}")"
 filename="tables/${schema}${suffix:+/}${suffix}/procedures/${procedure}.sql"
 
 if [[ "${db_id}" =~ oracle ]]; then
-	usage 'oracle not implemented yet'
+	# usage 'oracle not implemented yet'
 
 	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
 	mkdir -p "tables/${schema}${suffix:+/}${suffix}/procedures"
 	gather_env_vars
 
-	echo "${schema}.${procedure}" | tee "${filename}"
+	echo "-- ${schema}.${procedure}" | tee "${filename}"
 
 	oracle='/Users/chad.hatcher/sqlcl/bin/sql'
 	login="${!db_user}/${!db_pass}@//${!db_host}:${!db_port}/${!db_name}"
-	query="SHOW CREATE PROCEDURE ${schema}.${procedure};"
+	query="
+		-- SET SQLFORMAT ANSICONSOLE;
+		-- SET PAGESIZE 1000;
+		-- SET LINESIZE 1000;
+	  -- SET SQLBLANKLINES ON;
+		-- SET LONG 2000;
+	  ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD HH:MI:SS PM';
 
-	$oracle -S -L "${login}" \
-		<<< "${query}" \
-		| sed -E -e 's/\\n/\'$'\n''/g' \
-		>> "${filename}"
+		DESCRIBE ${schema}.${procedure};
+
+		SELECT TEXT AS \"Procedure Body\"
+		FROM ALL_SOURCE
+		WHERE NAME = '${procedure}'
+		ORDER BY LINE;
+		"
+
+	$oracle -S -L "${login}" <<< "$query" | sed -E -e 's/ +$//' | tee -a "${filename}"
+
+
+
 
 elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
 	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
