@@ -119,9 +119,11 @@ if [[ "${db_id}" =~ oracle ]]; then
 
 	if [ -z "${sql_file}" ]; then
 		echo -e "${S_CS} Connecting to database... ${N_CS}" >&2
-		kill -- -"${killer}" 2>/dev/null
-		trap - EXIT
+		# kill -- -"${killer}" 2>/dev/null
+		# trap - EXIT
+		echo 'logging in'
 		$oracle -L "${login}"
+		echo 'done'
 
 	elif [ ! -f "sql/${sql_file}.sql" ]; then
 		echo -e "${S_CS} You said: ${N_CS}" >&2
@@ -159,6 +161,7 @@ SQL
 SET SQLFORMAT ANSICONSOLE;
 SET PAGESIZE 50000;
 SET SQLBLANKLINES ON;
+SET VERIFY OFF;
 ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD HH:MI:SS PM';
 ${variables}
 @sql/${sql_file}.sql
@@ -186,8 +189,8 @@ elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
 
 	if [ -z "${sql_file}" ]; then
 		echo -e "${S_CS} Connecting to database... ${N_CS}" >&2
-		kill -- -"${killer}" 2>/dev/null
-		trap - EXIT
+		# kill -- -"${killer}" 2>/dev/null
+		# trap - EXIT
 		mysql -A --connect-expired-password --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}"
 
 	elif [ ! -f "sql/${sql_file}.sql" ]; then
