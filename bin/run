@@ -99,7 +99,7 @@ echo -e "${K_CS} watch_dirs: ${watch_dirs[*]} ${N_CS}" >&2
 
 if [[ "${mode}" =~ default ]]; then
 	if [[ "${dev_script}" =~ nodemon ]]; then
-		preamble "Hosting via ${npx} nodemon"
+		preamble "[h1] Hosting via ${npx} nodemon"
 		if [ "${npx}" = 'yarn' ]
 		then temp_env 'development' 'debug'
 		else temp_env 'dev1' 'debug'
@@ -108,7 +108,7 @@ if [[ "${mode}" =~ default ]]; then
 		$npx nodemon "./${main_script}" "${watch_dirs[@]}"
 
 	elif [ "${start_script}" != 'null' ]; then
-		preamble "Running npm start"
+		preamble "[h22] Running npm start"
 		npm start
 
 	else
@@ -119,13 +119,13 @@ if [[ "${mode}" =~ default ]]; then
 
 elif [[ "${mode}" =~ test ]]; then
 	if [ "${test_script}" = 'ng test' ]; then
-		preamble "Testing via ${npx} ng test watch=true"
+		preamble "[t1] Testing via ${npx} ng test watch=true"
 		$npx ng test --watch=true --code-coverage --source-map
 
 	elif [[ "${test_script}" =~ mocha ]]; then
 		if [ "${npx}" = 'yarn' ]
-		then preamble "Testing via ${npx} ${nyc} mocha [broken watch]"
-		else preamble "Testing via ${npx} ${nyc} mocha watch=true"
+		then preamble "[t2] Testing via ${npx} ${nyc} mocha [broken watch]"
+		else preamble "[t3] Testing via ${npx} ${nyc} mocha watch=true"
 		fi
 
 		new_env='UNIT_TEST'
@@ -207,11 +207,11 @@ elif [[ "${mode}" =~ test ]]; then
 
 elif [[ "${mode}" =~ once ]]; then
 	if [ "${test_script}" = 'ng test' ]; then
-		preamble "Testing via ${npx} ng test watch=false"
+		preamble " [o1] Testing via ${npx} ng test watch=false"
 		$npx ng test --watch=false --code-coverage --source-map
 
 	elif [[ "${test_script}" =~ mocha ]]; then
-		preamble "Testing via ${npx} ${nyc} mocha watch=false"
+		preamble " [o2] Testing via ${npx} ${nyc} mocha watch=false"
 		if [ "${npx}" = 'yarn' ]
 		then temp_env 'development' 'warn'
 		else temp_env 'UNIT_TEST' 'warn'
@@ -243,11 +243,11 @@ elif [[ "${mode}" =~ cover ]]; then
 	rm -rf './coverage'
 
 	if [ "${test_script}" = 'ng test' ]; then
-		preamble "Testing via ${npx} ng test watch=false"
+		preamble "[c1] Testing via ${npx} ng test watch=false"
 		$npx ng test --watch=false --code-coverage --source-map
 
 	elif [[ "${test_script}" =~ mocha ]]; then
-		preamble "Testing via ${npx} ${nyc} mocha watch=false"
+		preamble "[c2] Testing via ${npx} ${nyc} mocha watch=false"
 		if [ "${npx}" = 'yarn' ]
 		then temp_env 'development' 'warn'
 		else temp_env 'UNIT_TEST' 'warn'
