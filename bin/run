@@ -288,6 +288,7 @@ elif [[ "${mode}" =~ stage ]]; then
 	if [ -d 'docs/v1' ]; then git checkout docs/v1/swagger* >&2; fi
 	git stash -u --keep-index >&2
 	run once || :
+	git restore -W -S . >&2
 	git stash apply --index >&2
 	git stash drop >&2
 
