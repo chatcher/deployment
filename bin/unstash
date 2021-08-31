@@ -18,8 +18,10 @@ usage() {
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
 if [ "${1}" == '1' ]; then
+	echo "Unstashing top of stack" >&2
   git stash apply --index || git stash apply
   git stash drop
 elif [ -n "${1}" ]; then
+	echo "Unstashing ${1}" >&2
 	git stash apply --index "${1}" || git stash apply
 fi
