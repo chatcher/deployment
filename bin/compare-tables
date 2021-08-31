@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+set -e
+set -x
+
+usage() {
+	echo "Description" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") [-x] <database> <schema1> <schema2> <table>" >&2
+	echo >&2
+	echo "options:" >&2
+	echo "  -x    Some unknown option" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+database="${1}"
+schema1="${2}"
+schema2="${3}"
+table="${4}"
+
+if [ -z "${database}" ] || [ -z "${schema1}" ] || [ -z "${schema2}" ] || [ -z "${table}" ]; then
+	usage
+fi
+
+describe "${database}" "${schema1}" "${table}"
+describe "${database}" "${schema2}" "${table}"
+
+colordiff -y "${HOME}/deployment/bin/sql/${database}/tables/${schema1}/${table}.txt" "${HOME}/deployment/bin/sql/${database}/tables/${schema2}/${table}.txt"
