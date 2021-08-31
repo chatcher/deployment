@@ -14,7 +14,7 @@ usage() {
 
 while read -u 3 -r branch; do
   if [[ "${branch}" =~ ^tmp ]]; then
-    git branch -d "${branch}"
+    git branch -d "${branch}" &>/dev/null || echo "not cleaned: ${branch}"
   fi
 
 done 3<<< "$(git branch -l 'tmp/*')"
