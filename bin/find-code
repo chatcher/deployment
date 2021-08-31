@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+
+set -e
+set -x
+
+usage() {
+	echo "Search all repositories for <query>" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <query>" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+search() {
+	filename="${1}"
+	query="${2}"
+	tracker="${3}"
+	timestamp=0
+	if [ -n "${tracker}" ] && [ -f "${tracker}" ]; then
+		timestamp="$(cat "${tracker}")"
+	fi
+
+	if [ -f "${1}" ]; then
+		discovery="$(grep "${query}" "${filename}" | sed -E -e 's/^ +//')"
+		nowish="$(date +%s )"
+
+		if [ -n "${discovery}" ]; then
+			echo >&2
+			echo -e "${I_CS} ${filename} ${N_CS}" >&2
+			echo "${discovery}" >&2
+			if [ -n "${tracker}" ] && [ -f "${tracker}" ]; then
+				echo "$((nowish + 1))" > "${tracker}"
+			fi
+		elif (( timestamp < nowish )); then
+			echo -n '.' >&2
+			if [ -n "${tracker}" ] && [ -f "${tracker}" ]; then
+				echo "$((nowish + 1))" > "${tracker}"
+			fi
+		fi
+	fi
+}
+export -f search
+
+FILE_REGEX='.*\.[jt]s'
+REPO_TYPE='any'
+QUERY_STRING=''
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+while (( $# > 0 )); do
+	if [ "${1}" = '--html' ]; then
+		FILE_REGEX='.*\.html'
+	elif [ "${1}" = '--ui' ]; then
+		REPO_TYPE='ui'
+	elif [ "${1}" = '--api' ]; then
+		REPO_TYPE='api'
+	else
+		QUERY_STRING="${QUERY_STRING}${QUERY_STRING:+ }${1}"
+	fi
+
+	shift
+done
+
+if [ -z "${QUERY_STRING}" ]; then usage 'Search query required.'; fi
+
+tracker="$(mktemp)"
+trap 'rm -rf "${tracker}"' EXIT
+
+case "${REPO_TYPE}" in
+  any)
+		find ~/repo -type f -regex "${FILE_REGEX}" -not -path '*/coverage/*' -not -path '*/node_modules/*' | xargs -I {} bash -c 'search "${@}"' -- {} "${QUERY_STRING}" "${tracker}"
+    ;;
+
+  ui)
+		find ~/repo/*_ui -type f -regex "${FILE_REGEX}" -not -path '*/coverage/*' -not -path '*/node_modules/*' | xargs -I {} bash -c 'search "${@}"' -- {} "${QUERY_STRING}" "${tracker}"
+    ;;
+
+  api)
+		find ~/repo/*_api -type f -regex "${FILE_REGEX}" -not -path '*/coverage/*' -not -path '*/node_modules/*' | xargs -I {} bash -c 'search "${@}"' -- {} "${QUERY_STRING}" "${tracker}"
+    ;;
+
+  *)
+    usage
+    ;;
+esac
+
+
+echo >&2
+echo -e "${S_CS} done ${N_CS}" >&2
+
