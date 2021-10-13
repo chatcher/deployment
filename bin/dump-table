@@ -133,7 +133,7 @@ if [[ "${db_id}" =~ oracle ]]; then
 		SELECT * FROM ${schema}.${table} order by 1, 2 fetch first 100 rows only;
 	"
 
-	$oracle -S -L "${login}" <<< "$query" >> "${filename}"
+	$oracle -S -L "${login}" <<< "$query" | tee -a "${filename}"
 
 elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
 	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
@@ -152,7 +152,7 @@ elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
 		"--password=${!db_pass}" \
 		"--database=${!db_name}" \
 		<<< "${query}" \
-		>> "${filename}"
+		| tee -a "${filename}"
 
 else
 	usage "Unsupported database: '${db_id}'."
