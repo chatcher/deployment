@@ -4,6 +4,8 @@ set -e
 # set -x
 
 gather_env_vars() {
+	source ~/.env
+
 	re="$(sed -E -e 's/[^a-z]/./g' <<< "${db_id}" | tr '[:lower:]' '[:upper:]')"
 
 	while read -u 3 -r line; do
