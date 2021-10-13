@@ -52,8 +52,13 @@ QUERY_STRING=''
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
 while (( $# > 0 )); do
-	if [ "${1}" = '--html' ]; then
+	if [ "${1}" = '--any' ]; then
+		FILE_REGEX='.*'
+	elif [ "${1}" = '--html' ]; then
 		FILE_REGEX='.*\.html'
+	elif [ "${1}" = '--files' ]; then
+		FILE_REGEX=".*/${2}"
+		shift
 	elif [ "${1}" = '--ui' ]; then
 		REPO_TYPE='ui'
 	elif [ "${1}" = '--api' ]; then
