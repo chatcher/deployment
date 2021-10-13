@@ -27,11 +27,9 @@ checkout "${branch}"
 checkout temp
 
 sha="$(stash)"
-git rebase origin/dev || prompt 'Rebase failed. You wanna take care of that?'
+git rebase "${initial}" || prompt 'Rebase failed. You wanna take care of that?'
 unstash "${sha}" || prompt 'Unstash failed. You wanna fix that crap?'
 
-git reset origin/dev
+git reset "${initial}"
 
-git stash
 checkout "${initial}"
-git stash pop
