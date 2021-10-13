@@ -86,6 +86,7 @@ if [ -d 'common' ]; then watch_dirs+=( '--watch' 'common' ); fi
 
 test_path='src/api/**/*.test.js'
 if [ -d 'server/tests' ]; then test_path='server/tests'; fi
+if [ -f 'Jenkinsfile-Lambda.config' ]; then test_path='src/**/*.test.js'; fi
 
 watch_dir="${server_dir}"
 if [ -d "${watch_dir}/api" ]; then watch_dir="${watch_dir}/api"; fi
