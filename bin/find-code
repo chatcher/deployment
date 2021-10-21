@@ -56,8 +56,8 @@ while (( $# > 0 )); do
 		FILE_REGEX='.*'
 	elif [ "${1}" = '--html' ]; then
 		FILE_REGEX='.*\.html'
-	elif [ "${1}" = '--files' ]; then
-		FILE_REGEX=".*/${2}"
+	elif [[ "${1}" =~ --files? ]]; then
+		FILE_REGEX=".*/${2}.*"
 		shift
 	elif [ "${1}" = '--ui' ]; then
 		REPO_TYPE='ui'
