@@ -12,11 +12,30 @@ usage() {
   exit 1
 }
 
+fix_merge() {
+  open -a 'Sublime Merge' '.'
+  prompt "Fix and complete merge?"
+}
+
+if [ "$(get-current-branch)" != "$(get-repo-base-branch)" ]; then
+  git stash -u
+  checkout
+fi
+
+sha="$(stash)"
+
+temp="tmp/$(date +%s)"
+checkout "${temp}"
+
 while read -u 3 -r branch; do
   if [[ "${branch}" =~ ^tmp ]]; then
+    git merge "${branch}" || fix_merge
     git branch -d "${branch}" &>/dev/null || echo "not cleaned: ${branch}"
   fi
-
 done 3<<< "$(git branch -l 'tmp/*')"
+
+unstash "${sha}"
+git reset "origin/$(get-repo-base-branch)"
+checkout
 
 echo -e "${S_CS} Done ${N_CS}" >&2
