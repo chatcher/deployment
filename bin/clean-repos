@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+
+set -e
+# set -x
+
+usage() {
+	echo "For selected repositories, reset them to the base branch and clean up some stuff." >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <filter> [<filter> ...]" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+check_repo() {
+	repo="${1}"
+	shift
+	while (( $# > 0 )); do
+		if [[ "${repo}" =~ $1 ]]; then
+			if [ "${do_prompt}" == 1 ]; then
+				prompt -n "Clean ${repo}?"
+				return $?
+			else
+				return 0
+			fi
+		fi
+		shift
+	done
+	return 1
+}
+
+clean_repo() {
+	cd "${1}"
+	checkout || :
+	clean-temp-branches || :
+	cd -
+}
+
+do_prompt=1
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+if [ "${1}" = '-y' ]; then
+	do_prompt=0
+	shift
+fi
+
+if (( $# == 0 )); then
+	usage "At least one filter must be provided"
+fi
+
+REPO_DIR="${HOME}/repo"
+
+if [ ! -d "${REPO_DIR}" ]; then
+	echo -e "${W_CS} Default repository directory not found: ${N_CS}" >&2
+	echo -e "${I_CS} \t ${REPO_DIR} ${N_CS}" >&2
+	read -p 'Repository directory: ' -r REPO_DIR
+fi
+
+if [ ! -d "${REPO_DIR}" ]; then
+	usage 'No repository directory'
+fi
+
+cd "${REPO_DIR}" || usage 'Failed to move to repository directory'
+
+for path in */; do
+	repo="${path%%/}"
+	if [ -e "${repo}/.git" ]; then
+    if check_repo "${repo}" "$@"; then
+    	clean_repo "${repo}"
+
+    elif [ $? -eq 2 ]; then
+    	echo -e "${S_CS} Quitting ${N_CS}" >&2
+    	exit
+    fi
+	fi
+done
