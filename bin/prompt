@@ -2,10 +2,11 @@
 
 usage() {
 	echo "usage:" >&2
-	echo "  $(basename "${0}") [-n] <prompt>" >&2
+	echo "  $(basename "${0}") [-nq] <prompt>" >&2
 	echo >&2
 	echo "options:" >&2
 	echo "  -n    default response will be 'n'" >&2
+	echo "  -q    offer 'q' option" >&2
 	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
@@ -15,20 +16,42 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
+message=()
 default='y'
-options="Y/n"
+options='Y/n'
+quit='';
 
-if [ "${1}" == '-n' ]; then
-	default='n'
-	options='y/N'
+while (( $# > 0 )); do
+	case "${1}" in
+		-n)
+			default='n'
+			options='y/N'
+			;;
+		-q)
+			quit='/q';
+			;;
+		*)
+			message+=( "${1}" )
+	esac
 	shift
-fi
+done
+
 
 echo >&2
-echo -e "${P_CS}${*}${N_CS}" >&2
-read -p "[${options}] " -r response
+echo -e "${P_CS}[${B_CS}?${C_CS}] ${message[*]} ${N_CS}" >&2
+read -p "${options}${quit} > " -r response
+
+# stop blinker
+echo -en "\033[2A\033[2G-\033[2E"
+#              ^      ^ ^     ^
+#              |      | |     |
+#              |      | |      \_Back to beginning two lines down
+#              |      |  \_Replace blinking '!' with a hyphen
+#              |       \_Go to second column
+#               \_Go up two lines
 
 if [[ "${response:-$default}" =~ ^[Yy] ]]; then exit 0; fi
 if [[ "${response:-$default}" =~ ^[Nn] ]]; then exit 1; fi
+if [[ "${response:-$default}" =~ ^[Qq] ]]; then exit 2; fi
 
 usage "Invalid response: '${response}'"
