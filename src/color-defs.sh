@@ -5,24 +5,28 @@ export S_CS="\033[32m" # status  - green
 export E_CS="\033[31m" # error   - red
 export W_CS="\033[33m" # warning - orange
 
-export I_CS="\033[38;5;39m"   # info   - blue
-export D_CS="\033[35m"   # debug  - purple
-export P_CS="\033[36m"   # prompt - cyan
-export A_CS="\033[31m\a" # alert  - red with bell
-export K_CS="\033[90m"   # trace  - grey
-export L_CS="\033[36;4m"   # link   - cyan, underline
+export I_CS="\033[38;5;39m" # info   - blue
+export D_CS="\033[35m"      # debug  - purple
+export P_CS="\033[93m"      # prompt - yellow
+export A_CS="\033[31m\a"    # alert  - red with bell
+export K_CS="\033[90m"      # trace  - grey
+export L_CS="\033[36;4m"    # link   - cyan, underline
+
+export U_CS="\033[4m" # underline
+export B_CS="\033[5m" # blinky
+export C_CS="\033[24;25m" # cancel underline and blink
 
 function color_vars() {
 	echo -e "\${N_CS} : ${N_CS}normal${N_CS}  - white"
 	echo -e "\${S_CS} : ${S_CS}status${N_CS}  - green"
 	echo -e "\${E_CS} : ${E_CS}error${N_CS}   - red"
-	echo -e "\${W_CS} : ${W_CS}warning${N_CS} - orange"
+	echo -e "\${W_CS} : ${W_CS}warning${N_CS} - brown"
 
 	echo -e "\${A_CS} : ${E_CS}alert${N_CS}   - red with bell"
 	echo -e "\${I_CS} : ${I_CS}info${N_CS}    - blue"
 	echo -e "\${D_CS} : ${D_CS}debug${N_CS}   - purple"
 	echo -e "\${K_CS} : ${K_CS}dark${N_CS}    - grey"
-	echo -e "\${P_CS} : ${P_CS}prompt${N_CS}  - cyan"
+	echo -e "\${P_CS} : ${P_CS}prompt${N_CS}  - yellow"
 	echo -e "\${L_CS} : ${L_CS}link${N_CS}    - cyan, underline"
 }
 
