@@ -17,9 +17,6 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-# code goes here ...
-list="$(git branch -r)"
-
 while read -u 3 -r remote; do
 
 	branch="${remote##*origin/}"
@@ -27,4 +24,4 @@ while read -u 3 -r remote; do
 	echo -e "\t${branch}" >&2
 	# git log --since="$(date -v-1m '+%Y-%m-%d')" --no-merges --pretty=format:'(%h) %an (%ar)' HEAD.."origin/${branch}" >&2
 	git log --since="$(date -v-1m '+%Y-%m-%d')" --pretty=format:'(%h) %an (%ar) %s' origin/HEAD.."origin/${branch}" >&2
-done 3<<< "${list}"
+done 3<<< "$(git branch -r)"
