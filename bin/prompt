@@ -39,7 +39,9 @@ done
 
 echo >&2
 echo -e "${P_CS}[${B_CS}?${C_CS}] ${message[*]} ${N_CS}" >&2
-read -p "${options}${quit} > " -r response
+echo -en "${options}${quit} > " >&2
+# shellcheck disable=SC2015
+read -t 0 -r response && echo || read -r response
 
 # stop blinker
 echo -en "\033[2A\033[2G-\033[2E"
