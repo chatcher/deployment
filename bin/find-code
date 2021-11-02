@@ -25,7 +25,7 @@ search() {
 	fi
 
 	if [ -f "${1}" ]; then
-		discovery="$(grep "${query}" "${filename}" | sed -E -e 's/^ +//')"
+		discovery="$(grep "${query}" "${filename}" | sed -E -e 's/^ +//' -e "s/(${query})/"$'\033'"[33m\1"$'\033'"[m/")"
 		nowish="$(date +%s )"
 
 		if [ -n "${discovery}" ]; then
@@ -56,7 +56,7 @@ while (( $# > 0 )); do
 		FILE_REGEX='.*'
 	elif [ "${1}" = '--html' ]; then
 		FILE_REGEX='.*\.html'
-	elif [[ "${1}" =~ --files? ]]; then
+	elif [[ "${1}" =~ -f ]]; then
 		FILE_REGEX=".*/${2}.*"
 		shift
 	elif [ "${1}" = '--ui' ]; then
