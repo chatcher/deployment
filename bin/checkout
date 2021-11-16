@@ -60,6 +60,8 @@ git_clone() {
 	else
 		echo "${S_CS} No lock file ${N_CS}" >&2
 	fi
+
+	open -a 'Sublime Text' . &
 }
 
 git_checkout() {
