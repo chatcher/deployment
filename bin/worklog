@@ -16,25 +16,26 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-project="$(pwd | sed -e "s|${HOME}|~|")"
 storage="${HOME}/Desktop/worklogs"
 mkdir -p "${storage}" || usage "Failed to make storage at ${storage}"
 cd "${storage}" || usage "No storage at ${storage}"
 
-today="$(date '+%Y-%m-%d')"
-file="${today}.txt"
-
 entry="${*}"
 
 if [ -z "${entry}" ]; then
-	if [ -f "${file}" ]; then
-		cat "${file}" >&2
-
-	else
-		echo "Nothing for today" >&2
-	fi
-
+	for offset in {6..0}; do
+		stamp="$(date "-v-${offset}d" '+%Y-%m-%d')"
+		file="${stamp}.txt"
+		echo -e "${S_CS} for ${stamp} ${N_CS}" >&2
+		if [ -f "${file}" ]; then
+			cat "${file}" >&2
+		else
+			echo "Nothing" >&2
+		fi
+	done
 else
-	echo "[$(date '+%H:%M') ${project}] - ${entry}" >> "${file}"
+	today="$(date '+%Y-%m-%d')"
+	file="${today}.txt"
+	echo "[$(date '+%H:%M')] ${entry}" >> "${file}"
 	echo -e "${S_CS} Wrote to ${file} ${N_CS}" >&2
 fi
