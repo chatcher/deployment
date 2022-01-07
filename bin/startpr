@@ -17,32 +17,18 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
+if (( $# = 0 )); then usage "PR title required."; fi
+
 if ! has-staged-changes; then
 	echo -e "${W_CS} I don't see staged changes. ${N_CS}" >&2
 	if prompt 'Do you want to create a Pull Request from the current commit?'; then
-		createpr "$@"
+		createpr "${@}"
 		exit
 	else
 		usage "Expected staged changes."
 	fi
 fi
 
-if [[ "${1}" =~ ^https?:// ]]; then
-	ref="${1}"
-	shift
-fi
-
-message="${*}"
-
-if [ -z "${message}" ]; then usage "Could not derive commit message."; fi
-
-branch="tmp/$(date +%s)"
-
-checkout "${branch}"
-git commit -S -m "${message}" --no-verify
-
-if [ -z "${ref}" ]; then
-	createpr "${@}"
-else
-	createpr "${ref}" "${@}"
-fi
+checkout "tmp/$(date +%s)"
+git commit -S -m "${*}" --no-verify
+createpr "${@}"
