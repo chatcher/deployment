@@ -17,15 +17,15 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-if has-staged-changes; then
-	echo -e "${W_CS} I see staged changes. ${N_CS}" >&2
-	if prompt 'Do you want to create a Pull Request from the staged changes?'; then
-		chainpr "$@"
-		exit
-	else
-		usage "Unexpected staged changes."
-	fi
-fi
+# if has-staged-changes; then
+# 	echo -e "${W_CS} I see staged changes. ${N_CS}" >&2
+# 	if prompt 'Do you want to create a Pull Request from the staged changes?'; then
+# 		chainpr "$@"
+# 		exit
+# 	else
+# 		usage "Unexpected staged changes."
+# 	fi
+# fi
 
 bodyfile="$(mktemp)"
 
@@ -55,6 +55,8 @@ ${header[*]}
 ${content%?}
 
 See title.
+
+[SQ](https://sonarqube.hpms.io/component_measures?id=$(get-repo-name)&pullRequest=TBD&metric=new_coverage)
 
 ## Types of changes
 
@@ -98,7 +100,11 @@ read -d '' -r data <<JSON || :
 }
 JSON
 
-echo "${data}" >&2
+echo -e "base: ${I_CS}${base}${N_CS}" >&2
+echo -e "head: ${I_CS}${branch}${N_CS}" >&2
+echo -e "draft: ${I_CS}${draft}${N_CS}" >&2
+echo -e "title: ${I_CS}${title}${N_CS}" >&2
+echo -e "body:\n${I_CS}${body}\n${K_CS}EOF${N_CS}" >&2
 
 if ! prompt 'Look good?'; then exit 1; fi
 
@@ -110,7 +116,8 @@ fi
 git push -u origin "${branch}" --no-verify
 auth_header="Authorization: bearer ${GITHUB_TOKEN}"
 accept_header='Accept: application/vnd.github.shadow-cat-preview+json'
-response="$(curl -H "${auth_header}" -H "${accept_header}" -d "${data}" "$(get-repo-api)/repos/$(get-repo-path)/pulls" -s)"
+github_url="$(get-repo-api)/repos/$(get-repo-path)/pulls"
+response="$(curl -H "${auth_header}" -H "${accept_header}" "${github_url}" -d "${data}" -s)"
 
 prn="$(jq '.number' <<< "${response}")"
 user="$(jq -r '.user.login' <<< "${response}")"
@@ -121,17 +128,26 @@ if [ -z "${prn}" ] || [ "${prn}" == 'null' ]; then
 	exit 1
 fi
 
+
+echo -e "${S_CS}Updating SQ link...${N_CS}" >&2
+body="$(sed -E -e "s/pullRequest=TBD/pullRequest=${prn}/" <<< "${body}")"
+read -d '' -r data <<JSON || :
+{ "body": "${body}" }
+JSON
+accept_header='Accept: application/vnd.github.v3+json'
+github_url="$(get-repo-api)/repos/$(get-repo-path)/pulls/${prn}"
+curl -X PATCH -H "${auth_header}" -H "${accept_header}" "${github_url}" -d "${data}" -s
+
+
+echo -e "${S_CS}Self-assigning PR...${N_CS}" >&2
+read -d '' -r data << JSON || :
+{ "assignees": ["${user}"] }
+JSON
+curl -H "${auth_header}" "$(get-repo-api)/repos/$(get-repo-path)/issues/${prn}/assignees" -d "${data}"
+
+
+echo -e "${S_CS}Launching PR page...${N_CS}" >&2
 link="$(get-pull-request-link "${prn}")"
 open "${link}"
-
-read -d '' -r data << JSON || :
-{
-	"assignees": [
-		"${user}"
-	]
-}
-JSON
-
-curl -H "Authorization: bearer ${GITHUB_TOKEN}" -d "${data}" "$(get-repo-api)/repos/$(get-repo-path)/issues/${prn}/assignees"
 
 echo -e "${L_CS}${link}${N_CS}" >&2
