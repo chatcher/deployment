@@ -21,4 +21,4 @@ usage() {
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
 # code goes here ...
-git fsck --unreachable | grep commit | cut -d\  -f3 | xargs git log --merges --no-walk --grep=WIP
+git fsck --unreachable | grep commit | cut -d\  -f3 | xargs git log --merges --no-walk --name-only --oneline
