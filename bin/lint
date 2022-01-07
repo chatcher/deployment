@@ -18,6 +18,8 @@ usage() {
 }
 
 list() {
+	echo -e "${S_CS} Collecting files... ${N_CS}" >&2
+
 	if [ -z "$(git diff --staged)" ]; then
 		git diff --name-only | sed -E -e '/\.(js|ts)$/!d'
 	else
@@ -33,14 +35,34 @@ lint-fix() {
 	list | xargs eslint --fix
 }
 
+npm-lint() {
+	npm='npm'
+
+	if [ "$(jq -rc '.engines.yarn' package.json)" != 'null' ]; then npm=yarn; fi
+
+	echo -e "${I_CS} Running $npm run lint ... ${N_CS}" >&2
+	$npm run lint
+}
+
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
 if [[ "${1}" =~ ^(--)?fix$ ]]; then
 	lint-fix
 
+elif [[ "${1}" =~ ^(--)?list$ ]]; then
+	list
+
 elif [ -n "${1}" ]; then
 	usage "Unknown argument: ${1}"
 
 else
-	lint
+	if [ -z "$(list)" ]; then
+		npm-lint
+
+	else
+		lint && echo -e "${S_CS} Index is clean. Running whole project ${N_CS}" >&2 && sleep 2 && npm-lint
+	fi
 fi
+
+
+# eslint ./src/ --ignore-path .gitignore --ignore-pattern internals/scripts --ignore-pattern **/*.*-test.js
