@@ -159,6 +159,7 @@ SQL
 
 	else
 		echo -e "${S_CS} Executing SQL script with variables... ${N_CS}" >&2
+		echo -e "${D_CS} ${variables} ${N_CS}" >&2
 		$oracle -S -L "${login}" <<SQL
 SET SQLFORMAT ANSICONSOLE;
 SET PAGESIZE 50000;
