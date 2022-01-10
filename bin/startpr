@@ -17,7 +17,7 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-if (( $# = 0 )); then usage "PR title required."; fi
+if (( $# == 0 )); then usage "PR title required."; fi
 
 if ! has-staged-changes; then
 	echo -e "${W_CS} I don't see staged changes. ${N_CS}" >&2
