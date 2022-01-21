@@ -52,27 +52,34 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-filename='package.json'
-
-while ! [ -f "${filename}" ] && [ "$(pwd)" != '/' ]; do
+while ! [ -f 'package.json' ] && ! [ -f 'go.mod' ] && [ "$(pwd)" != '/' ]; do
 	cd ..
 done
 
-if ! [ -f "${filename}" ]; then
-	usage "No ${filename} directory found in path; better luck next time."
+if ! [ -f 'package.json' ] && ! [ -f 'go.mod' ]; then
+	usage "No package.json or go.mod directory found in path; better luck next time."
 fi
 
-npx='npx'
+npx='go'
 nyc=''
 
-if [ "$(jq -rc '.engines.yarn' package.json)" != 'null' ]; then npx=yarn; fi
-if [ "$(jq -rc '.devDependencies.istanbul' package.json)" != 'null' ]; then nyc='istanbul'; fi
-if [ "$(jq -rc '.devDependencies.nyc' package.json)" != 'null' ]; then nyc='nyc'; fi
+if [ -f "package.json" ]; then
+	npx='npx'
+	if [ "$(jq -rc '.engines.yarn' package.json)" != 'null' ]; then npx=yarn; fi
+	if [ "$(jq -rc '.devDependencies.istanbul' package.json)" != 'null' ]; then nyc='istanbul'; fi
+	if [ "$(jq -rc '.devDependencies.nyc' package.json)" != 'null' ]; then nyc='nyc'; fi
 
-dev_script="$(jq -rc '.scripts.dev' package.json)"
-start_script="$(jq -rc '.scripts.start' package.json)"
-test_script="$(jq -rc '.scripts.test' package.json)"
-main_script="$(jq -rc '.main' package.json)"
+	dev_script="$(jq -rc '.scripts.dev' package.json)"
+	start_script="$(jq -rc '.scripts.start' package.json)"
+	test_script="$(jq -rc '.scripts.test' package.json)"
+	main_script="$(jq -rc '.main' package.json)"
+elif [ -f 'go.mod' ]; then
+	# dev_script="$(jq -rc '.scripts.dev' package.json)"
+	# start_script="$(jq -rc '.scripts.start' package.json)"
+	test_script="go test"
+	# main_script="$(jq -rc '.main' package.json)"
+fi
+
 
 server_dir="server"
 if [ ! -d "${server_dir}" ]; then server_dir="src"; fi
@@ -87,6 +94,7 @@ if [ -d 'common' ]; then watch_dirs+=( '--watch' 'common' ); fi
 test_path='src/api/**/*.test.js'
 if [ -d 'server/tests' ]; then test_path='server/tests'; fi
 if [ -f 'Jenkinsfile-Lambda.config' ]; then test_path='src/**/*.test.js'; fi
+if [ "${npx}" == 'go' ]; then test_path='./...'; fi
 
 watch_dir="${server_dir}"
 if [ -d "${watch_dir}/api" ]; then watch_dir="${watch_dir}/api"; fi
@@ -94,9 +102,12 @@ if [ -d 'common' ]; then watch_dir="${watch_dir},common"; fi
 
 mode="${1:-default}"
 
-echo -e "${K_CS} ${mode} ${npx} ${nyc} ${N_CS}" >&2
-echo -e "${K_CS} test_path: ${test_path} ${N_CS}" >&2
-echo -e "${K_CS} watch_dirs: ${watch_dirs[*]} ${N_CS}" >&2
+echo -e "${I_CS} mode: ${mode} ${N_CS}" >&2
+echo -e "${I_CS} npx: ${npx} ${N_CS}" >&2
+echo -e "${I_CS} nyc: ${nyc} ${N_CS}" >&2
+echo -e "${I_CS} test_script: ${test_script} ${N_CS}" >&2
+echo -e "${I_CS} test_path: ${test_path} ${N_CS}" >&2
+echo -e "${I_CS} watch_dirs: ${watch_dirs[*]} ${N_CS}" >&2
 
 if [[ "${mode}" =~ default ]]; then
 	if [[ "${dev_script}" =~ nodemon ]]; then
@@ -175,6 +186,7 @@ elif [[ "${mode}" =~ test ]]; then
 
 		elif [ "${npx}" = 'npx' ] && [ "${nyc}" = 'istanbul' ]; then
 			echo -e "${I_CS} npx in istanbul ${N_CS}" >&2
+			usage "I'm not set up for that!"
 			# $npx                          mocha -b "${test_path}"             -w "${watch_dirs[*]}" && pass || fail
 
 			# runner=''
@@ -206,7 +218,6 @@ elif [[ "${mode}" =~ test ]]; then
 		else
 			usage 'I dunno what to do with this.'
 		fi
-set -x
 		if [ -z "${runner}" ] && [ -z "${reporter}" ]; then
 			usage "I guess that's not going to work"
 			# $npx nyc --reporter=lcov mocha -b "${test_path}" "${watch_switch}" "${watchers}" && pass || fail
@@ -217,7 +228,10 @@ set -x
 		else
 			$npx "${runner}" "${reporter}" mocha -b "${test_path}" "${recursive}" "${watch_switch}" ${watchers[@]} && pass || fail
 		fi
-set +x
+
+	elif [ "${test_script}" == 'go test' ]; then
+		preamble "[t1] Testing via go test"
+		go test -v "${test_path}"
 
 	elif [ "${test_script}" != 'null' ]; then
 		echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
@@ -287,6 +301,13 @@ elif [[ "${mode}" =~ cover ]]; then
 		else
 			$npx mocha "${test_path}" --exit
 		fi
+
+	elif [ "${test_script}" == 'go test' ]; then
+		preamble "[t1] Testing via go test"
+    rm -rf ./coverage
+		mkdir ./coverage
+		go test ./... -coverprofile=./coverage/c.out
+		go tool cover -html=./coverage/c.out
 
 	elif [ "${test_script}" != 'null' ]; then
 		echo -e "${A_CS}Maybe it's like: ${N_CS}" >&2
