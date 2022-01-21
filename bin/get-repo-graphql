@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+usage() {
+	echo "usage:" >&2
+	echo "  $(basename "${0}")" >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+while ! [ -d '.git' ] && [ "$(pwd)" != '/' ]; do
+	cd ..
+done
+
+if ! [ -d '.git' ]; then
+	usage 'No .git directory found in path; better luck next time.'
+fi
+
+url_opt="$(grep 'url = ' .git/config | sed -E -e 's/[[:space:]]*url = //')"
+
+api="$(sed -E -e 's/^(git@|https:\/\/)([a-zA-Z0-9._-]+)(\/.*|:.*)/\2/' <<< "${url_opt}")"
+
+if [ "${api}" == 'github.com' ]; then
+	echo "https://api.${api}/graphql" >&1
+
+else
+	echo "https://${api}/api/graphql" >&1
+fi
