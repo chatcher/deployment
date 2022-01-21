@@ -9,6 +9,9 @@ usage() {
 	echo "usage:" >&2
 	echo "  $(basename "${0}") <title>" >&2
 	echo >&2
+	echo "options:" >&2
+	echo "  -b <branch>  Use <branch> as base branch isntead of default." >&2
+	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
 
@@ -26,6 +29,12 @@ if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 # 		usage "Unexpected staged changes."
 # 	fi
 # fi
+
+if [ "${1}" == '-b' ]; then
+	shift
+	base="${1}"
+	shift
+fi
 
 bodyfile="$(mktemp)"
 
@@ -77,8 +86,10 @@ rm "${bodyfile}"
 
 # message="$(generate-commit-message "${title}")"
 branch="$(generate-branch-name "${title}")"
-base="$(get-repo-base-branch)"
 draft='true'
+if [ -z "${base}" ]; then
+	base="$(get-repo-base-branch)"
+fi
 
 if [ -z "${title}" ]; then usage "Pull Request title is required."; fi
 # if [ -z "${message}" ]; then usage "Could not derive commit message."; fi
