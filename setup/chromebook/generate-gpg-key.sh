@@ -10,6 +10,8 @@ if [ -z "${EMAIL_ADDRESS}" ]; fi
     exit 1
 fi
 
+git config --global user.email "${EMAIL_ADDRESS}"
+
 cd "${HOME}"
 rm -rf .gnupg
 mkdir -m 0700 .gnupg
