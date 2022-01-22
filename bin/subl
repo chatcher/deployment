@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+if [ -e "/usr/bin/subl" ]; then
+	/usr/bin/subl "$@"
+	exit
+fi
+
 set -e
 set -x
 
