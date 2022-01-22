@@ -62,4 +62,12 @@ ACCEPT_HEADER="Accept: application/vnd.github.merge-info-preview+json"
 PR_NODE_PATH=".data.repository.pullRequests.nodes"
 JSON_STRUCTURE="{number,title,user:.user.login,base,head,open,state,link,reviews:[.reviews.nodes|.[]|{user:.user.login,state}]}"
 
-curl -H "${AUTH_HEADER}" -H "${ACCEPT_HEADER}" -d "${data}" "$(get-repo-graphql)" -s | jq -c "${PR_NODE_PATH} | .[] | ${JSON_STRUCTURE}"
+response="$(curl -H "${AUTH_HEADER}" -H "${ACCEPT_HEADER}" -d "${data}" "$(get-repo-graphql)" -s)"
+message="$(jq -r '.message' <<< "${response}")"
+if [ -n "${message}" ]; then
+  echo "${E_CS} Error: ${message} ${N_CS}" >&2
+  sleep 1
+  exit 1
+fi
+
+jq -c "${PR_NODE_PATH} | .[] | ${JSON_STRUCTURE}" <<< "${response}"
