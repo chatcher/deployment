@@ -64,8 +64,8 @@ JSON_STRUCTURE="{number,title,user:.user.login,base,head,open,state,link,reviews
 
 response="$(curl -H "${AUTH_HEADER}" -H "${ACCEPT_HEADER}" -d "${data}" "$(get-repo-graphql)" -s)"
 message="$(jq -r '.message' <<< "${response}")"
-if [ -n "${message}" ]; then
-  echo "${E_CS} Error: ${message} ${N_CS}" >&2
+if [ "${message}" != 'null' ]; then
+  echo -e "${E_CS} Error: ${message} ${N_CS}" >&2
   sleep 1
   exit 1
 fi
