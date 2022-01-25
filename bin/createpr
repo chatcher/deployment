@@ -54,7 +54,10 @@ while (( $# > 0 )); do
   shift
 done
 
-printf -v content "%s\n" "${infix[@]}"
+content=''
+if (( ${#infix[@]} > 0 )); then
+	printf -v content "\n%s\n" "${infix[@]}"
+fi
 
 # [SQ](https://sonarqube.hpms.io/component_measures?id=$(get-repo-name)&pullRequest=TBD&metric=new_coverage)
 
@@ -62,10 +65,10 @@ read -d '' -r template <<TEMPLATE_MD || :
 ${header[*]}
 
 # Description
-
-${content%?}
-
+${content}
 See title.
+
+
 
 ## Types of changes
 
