@@ -44,7 +44,7 @@ echo -en "${options}${quit} > " >&2
 read -t 0 -r response && echo || read -r response
 
 # stop blinker
-echo -en "\033[2A\033[2G-\033[2E"
+echo -en "\033[2A\033[2G-\033[2E" >&2
 #              ^      ^ ^     ^
 #              |      | |     |
 #              |      | |      \_Back to beginning two lines down
