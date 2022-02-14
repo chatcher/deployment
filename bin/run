@@ -146,7 +146,8 @@ elif [[ "${mode}" =~ test ]]; then
 			new_env="${3:-development}"
 
 		elif [ "${npx}" = 'yarn' ]; then
-			new_env='development'
+			# new_env='development'
+			new_env='unit_test'
 		fi
 
 		temp_env "${new_env}" 'warn'
@@ -218,6 +219,7 @@ elif [[ "${mode}" =~ test ]]; then
 		else
 			usage 'I dunno what to do with this.'
 		fi
+
 		if [ -z "${runner}" ] && [ -z "${reporter}" ]; then
 			usage "I guess that's not going to work"
 			# $npx nyc --reporter=lcov mocha -b "${test_path}" "${watch_switch}" "${watchers}" && pass || fail
@@ -286,7 +288,7 @@ elif [[ "${mode}" =~ cover ]]; then
 	elif [[ "${test_script}" =~ mocha ]]; then
 		preamble "[c2] Testing via ${npx} ${nyc} mocha watch=false"
 		if [ "${npx}" = 'yarn' ]
-		then temp_env 'development' 'warn'
+		then temp_env 'unit_test' 'warn'
 		else temp_env 'UNIT_TEST' 'warn'
 		fi
 
