@@ -35,6 +35,7 @@ pr_number="$(jq -r '.number' <<< "${details}")"
 pr_open="$(jq -r '.open' <<< "${details}" | tr '[:upper:]' '[:lower:]')"
 pr_state="$(jq -r '.state' <<< "${details}" | tr '[:upper:]' '[:lower:]')"
 pr_title="$(jq -r '.title' <<< "${details}")"
+pr_date="$(jq -r '.date' <<< "${details}")"
 pr_user="$(jq -r '.user' <<< "${details}")"
 pr_body="$(jq -r '.body' <<< "${details}" | sed -e 's/\\r\\n/Ω/g' | tr 'Ω' '\n')"
 pr_head="$(jq -r '.head' <<< "${details}")"
@@ -48,8 +49,13 @@ state_color="${E_CS}"
 if [ "${pr_open}" == 'open' ]; then open_color="${S_CS}"; fi
 if [ "${pr_state}" == 'mergeable' ]; then state_color="${S_CS}"; fi
 
+
+dayCount="$(( ( $(date +%s) - $(date -jf '%Y-%m-%dT%H:%M:%SZ' "${pr_date}" +%s) ) / 86400 ))"
+dayPlural="$([ "${dayCount}" == 1 ] && echo '' || echo 's')"
+pr_age="${K_CS}($([ "${dayCount}" == 0 ] && echo 'today' || echo "${dayCount} day${dayPlural} old"))"
+
 echo >&2
-echo -e "${D_CS}#${pr_number} ${I_CS}${pr_user} ${K_CS}- ${open_color}${pr_open} ${state_color}${pr_state}${N_CS}" >&2
+echo -e "${D_CS}#${pr_number} ${I_CS}${pr_user} ${K_CS}- ${open_color}${pr_open} ${state_color}${pr_state} ${pr_age}${N_CS}" >&2
 echo -e "${K_CS}${pr_base} <- ${W_CS}${pr_head}${N_CS}" >&2
 echo -e "${N_CS}${pr_title}${N_CS}" >&2
 echo -e "${L_CS}${pr_link}${N_CS}" >&2
