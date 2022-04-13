@@ -101,10 +101,10 @@ if [ -z "${db_id}" ]; then usage 'Database identifier required'; fi
 if [ -z "${schema}" ]; then usage 'Schema name required'; fi
 if [ -z "${procedure}" ]; then
 	query="
-		SELECT routine_name
+		SELECT routine_schema, routine_name
 		FROM information_schema.routines
 		WHERE routine_type = 'PROCEDURE'
-		  AND routine_schema = '${schema}'
+		  AND (UPPER(routine_schema) = UPPER('${schema}') OR UPPER(routine_schema) = UPPER('${schema}'))
 	"
 	while read -u 3 -r line; do
 		procedure="$(sed -E -e 's/[^A-Za-z0-9_]//g' <<< "${line}")"
@@ -112,7 +112,7 @@ if [ -z "${procedure}" ]; then
 			if [ "${describe_all}" = 'true' ]; then
 				$0 "${db_id}" "${schema}" "${procedure}"
 			else
-				echo -e "${S_CS} [${procedure}] ${N_CS}" >&2
+				echo -e "${S_CS} [${line}] ${N_CS}" >&2
 			fi
 		fi
 	done 3<<< "$(runsql "${db_id}" "${query}" <<< 'y' 2>/dev/null | tail -n +3)"
