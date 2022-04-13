@@ -50,12 +50,35 @@ if [ "${pr_open}" == 'open' ]; then open_color="${S_CS}"; fi
 if [ "${pr_state}" == 'mergeable' ]; then state_color="${S_CS}"; fi
 
 
-dayCount="$(( ( $(date +%s) - $(date -jf '%Y-%m-%dT%H:%M:%SZ' "${pr_date}" +%s) ) / 86400 ))"
-dayPlural="$([ "${dayCount}" == 1 ] && echo '' || echo 's')"
-pr_age="${K_CS}($([ "${dayCount}" == 0 ] && echo 'today' || echo "${dayCount} day${dayPlural} old"))"
+pr_age_s="$(node -p <<< "Math.round((Date.now() - new Date('${pr_date}').getTime()) / 1000)")"
+
+# seconds
+ageCount="${pr_age_s}"
+ageUnits="$([ "${ageCount}" == 1 ] && echo 'second' || echo 'seconds')"
+
+# minutes
+if (( ageCount > 120 )); then
+	ageCount="$(( ageCount / 60 ))"
+	ageUnits="$([ "${ageCount}" == 1 ] && echo 'minute' || echo 'minutes')"
+fi
+
+# hours
+if (( ageCount > 120 )); then
+	ageCount="$(( ageCount / 60 ))"
+	ageUnits="$([ "${ageCount}" == 1 ] && echo 'hour' || echo 'hours')"
+fi
+
+# days
+if (( ageCount > 48 )); then
+	ageCount="$(( ageCount / 24 ))"
+	ageUnits="$([ "${ageCount}" == 1 ] && echo 'day' || echo 'days')"
+fi
+
+
+pr_age="(updated ${ageCount} ${ageUnits} ago)"
 
 echo >&2
-echo -e "${D_CS}#${pr_number} ${I_CS}${pr_user} ${K_CS}- ${open_color}${pr_open} ${state_color}${pr_state} ${pr_age}${N_CS}" >&2
+echo -e "${D_CS}#${pr_number} ${I_CS}${pr_user} ${K_CS}- ${open_color}${pr_open} ${state_color}${pr_state} ${K_CS}${pr_age}${N_CS}" >&2
 echo -e "${K_CS}${pr_base} <- ${W_CS}${pr_head}${N_CS}" >&2
 echo -e "${N_CS}${pr_title}${N_CS}" >&2
 echo -e "${L_CS}${pr_link}${N_CS}" >&2
@@ -73,28 +96,31 @@ approval[ch_rq]=0
 if [ -n "${reviews}" ]; then
 	while read -u 3 -r review; do
 		review_user="$(jq -r '.user' <<< "${review}")"
-		review_state="$(jq -r '.state' <<< "${review}")"
+		review_status="$(jq -r '.state' <<< "${review}")"
 
-		review_users[$review_user]="${review_state}"
+		review_users[$review_user]="${review_status}"
 	done 3<<<"${reviews}"
 fi
 
 for review_user in "${!review_users[@]}"; do
-	review_state="${review_users[$review_user]}"
-
-	echo "${review_user}: ${review_state}" >&2
+	review_color="${K_CS}"
+	review_status="${review_users[$review_user]}"
 
 	approval[total]="$(( approval[total] + 1 ))"
 
-	case "${review_state}" in
+	case "${review_status}" in
 		APPROVED)
 			approval[count]="$(( approval[count] + 1 ))"
+			review_color="\033[38;5;$((124+33))m"
 			;;
 		CHANGES_REQUESTED)
 			approval[ch_rq]="$(( approval[ch_rq] + 1 ))"
+			review_color="\033[38;5;$((196+21))m"
 			;;
-		*) echo -e "${A_CS} Unknown review status: '${review_state}'" >&2
+		*) echo -e "${A_CS} Unknown review status: '${review_status}'${N_CS}" >&2
 	esac
+
+	echo -e "${review_user}: ${review_color}${review_status}${N_CS}" >&2
 done
 
 approval_color="${I_CS}"
@@ -103,9 +129,9 @@ if (( approval[count] > 1 )); then
 fi
 
 if (( approval[count] > 0 )); then
-	echo -e "${approval_color}Approved: ${approval[count]} / ${approval[total]}" >&2
+	echo -e "${approval_color}Approved: ${approval[count]} / ${approval[total]}${N_CS}" >&2
 fi
 
 if (( approval[ch_rq] > 0 )); then
-	echo -e "${E_CS}Blockers: ${approval[ch_rq]}${N_CS}" >&2
+	echo -e "${E_CS}Blockers: ${approval[ch_rq]} / ${approval[total]}${N_CS}" >&2
 fi
