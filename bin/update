@@ -17,31 +17,31 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-# ?stash
+try_merge() {
+	git merge --no-commit --log "origin/${base}"
+}
 
+retry_merge() ({
+	prompt 'You wanna fix that?' && exit
+	git merge --abort
+	exit 1
+})
 
 details="$(get-pull-request "$(get-pull-request-number)")"
-
-# {
-#   "number": 137,
-#   "open": "open",
-#   "state": "behind",
-#   "title": "fix linting error",
-#   "user": "HJ81",
-#   "body": "# Description\r\n\r\n> amm_api/src/api/shared/services/FileStorage.service.js\r\n>   63:39  error  Expected to return a value at the end of arrow function  consistent-return\r\n\r\n## Types of changes (mark one or more with `[X]`)\r\n\r\n- [x] Refactor (changes code but does not affect functionality)\r\n",
-#   "head": "fix-linting-error",
-#   "base": "dev",
-#   "link": "https://github.cms.gov/HPMS/amm_api/pull/137"
-# }
 
 open="$(jq -r '.open' <<< "${details}")"
 state="$(jq -r '.state' <<< "${details}")"
 base="$(jq -r '.base' <<< "${details}")"
 
-if [ "${open}" == 'open' ] && [ "${state}" == 'behind' ]; then
-	echo 'git merge --commit -S --no-verify origin/"${base}"'
-	echo 'git log --oneline --left-right --merge'
-	echo 'git push --no-verify'
+if [ "${open}" != 'open' ]; then
+	echo -e "${S_CS} PR is not open, so nothing to do ${N_CS}" >&2
 else
-	echo 'either not open or not behind'
+	echo -e "${S_CS} PR is '${state}' ${N_CS}" >&2
+	sha="$(stash)"
+	trap 'unstash "${sha}"' EXIT
+	git fetch
+	try_merge || retry_merge
+	git log --oneline --left-right --merge
+	git commit --no-edit
+	git push --no-verify
 fi
