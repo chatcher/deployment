@@ -251,10 +251,18 @@ elif [[ "${mode}" =~ once ]]; then
 
 	elif [[ "${test_script}" =~ mocha ]]; then
 		preamble " [o2] Testing via ${npx} ${nyc} mocha watch=false"
-		if [ "${npx}" = 'yarn' ]
-		then temp_env 'development' 'warn'
-		else temp_env 'UNIT_TEST' 'warn'
+
+		new_env='UNIT_TEST'
+
+		if [ "${2}" = '--env' ]; then
+			new_env="${3:-development}"
+
+		elif [ "${npx}" = 'yarn' ]; then
+			# new_env='development'
+			new_env='unit_test'
 		fi
+
+		temp_env "${new_env}" 'warn'
 
 		if [ "${nyc}" = 'nyc' ]; then
 			if [ "${npx}" = 'yarn' ]
