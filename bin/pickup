@@ -15,23 +15,78 @@ usage() {
 	exit 1
 }
 
+try_merge() {
+	branch="${1}"
+	git merge --autostash --squash "origin/${branch}" >&2
+	# git merge -m "Temp merge commit" "origin/${branch}" >&2
+}
+
+retry_merge() ({
+	prompt 'You wanna go merge that?' && exit
+	git merge --abort >&2
+	exit 1
+})
+
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-initial="$(get-current-branch)"
 branch="${1}"
 
 if [ -z "${branch}" ]; then read -p 'Branch or Pull Request? ' -r branch; fi
 if [ -z "${branch}" ]; then usage "Branch or Pull Request Number required."; fi
 
-sha="$(stash)"
+if [[ "${branch}" =~ ^[0-9]+$ ]]; then
+	pr_branch="$(get-pull-request "${branch}" | jq -r '.head' )"
+	if [ "${pr_branch}" == 'null' ]; then usage "Couldn't find a branch for PR #${branch}."; fi
+	branch="${pr_branch}"
+fi
 
-checkout "${branch}"
-checkout tmp/pickup
+if [ -z "${branch}" ]; then usage "Branch or Pull Request Number required."; fi
 
-git rebase "${initial}" || prompt 'Rebase failed. You wanna take care of that?'
+echo -e "${I_CS} branch: ${branch} ${N_CS}" >&2
 
-git reset "${initial}"
+# sha="$(stash)"
+# trap 'unstash "${sha}"' EXIT
 
-checkout "${initial}" || prompt "checkout '${initial}' failed. You wanna fix that crap?"
+echo -e "${S_CS} Fetching remote branches... ${N_CS}" >&2
+git fetch >&2
 
-unstash "${sha}" || prompt 'Unstash failed. You wanna fix that crap?'
+echo -e "${S_CS} Let's see if we can actually merge that... ${N_CS}" >&2
+try_merge "${branch}" || retry_merge
+
+# # git pull || :
+
+# git checkout "${branch}"
+# checkout tmp/pickup
+# git merge "${initial}"
+
+
+
+# # git rebase "${initial}" || prompt 'Rebase failed. You wanna take care of that?'
+
+# git reset "${initial}"
+
+# checkout "${initial}" || prompt "checkout '${initial}' failed. You wanna fix that crap?"
+
+
+# we want all the changes in target branch plus our local changes
+# we want to pop stash onto target branch and fix conflicts
+# ! on target branch with local changes
+# reset back to initial
+# checkout initial
+
+
+# stash changes
+# checkout target, keep local initial
+# merge initial into target
+# checkout initial, keep local target
+# hard reset target
+# delete target
+# pop stash
+
+
+# stash changes
+# checkout local/dev, keep initial
+# merge remote target
+# reset to initial
+# checkout initial
+# pop stash
