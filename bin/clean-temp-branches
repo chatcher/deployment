@@ -13,7 +13,7 @@ usage() {
 }
 
 fix_merge() {
-  open -a 'Sublime Merge' '.'
+  open -a 'Sublime Merge' .
   prompt "Fix and complete merge?"
 }
 
