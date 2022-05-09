@@ -18,12 +18,13 @@ usage() {
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
 try_merge() {
-	git merge --no-commit --log "origin/${base}"
+	git merge --no-commit --log "origin/${base}" >&2
 }
 
 retry_merge() ({
-	prompt 'You wanna fix that?' && exit
-	git merge --abort
+	open -a 'Sublime Merge' .
+	prompt 'You wanna go merge that?' && exit
+	git merge --abort >&2
 	exit 1
 })
 
@@ -39,9 +40,12 @@ else
 	echo -e "${S_CS} PR is '${state}' ${N_CS}" >&2
 	sha="$(stash)"
 	trap 'unstash "${sha}"' EXIT
-	git fetch
+	git fetch >&2
+	git pull >&2
 	try_merge || retry_merge
-	git log --oneline --left-right --merge
-	git commit --no-edit
-	git push --no-verify
+	if has-changes; then
+		git log --oneline --left-right --merge >&2 || :
+		git commit --no-edit >&2
+	fi
+	git push --no-verify >&2
 fi
