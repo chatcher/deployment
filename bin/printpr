@@ -60,20 +60,19 @@ ageUnits="$([ "${ageCount}" == 1 ] && echo 'second' || echo 'seconds')"
 if (( ageCount > 120 )); then
 	ageCount="$(( ageCount / 60 ))"
 	ageUnits="$([ "${ageCount}" == 1 ] && echo 'minute' || echo 'minutes')"
-fi
 
-# hours
-if (( ageCount > 120 )); then
-	ageCount="$(( ageCount / 60 ))"
-	ageUnits="$([ "${ageCount}" == 1 ] && echo 'hour' || echo 'hours')"
-fi
+	# hours
+	if (( ageCount > 120 )); then
+		ageCount="$(( ageCount / 60 ))"
+		ageUnits="$([ "${ageCount}" == 1 ] && echo 'hour' || echo 'hours')"
 
-# days
-if (( ageCount > 48 )); then
-	ageCount="$(( ageCount / 24 ))"
-	ageUnits="$([ "${ageCount}" == 1 ] && echo 'day' || echo 'days')"
+		# days
+		if (( ageCount > 48 )); then
+			ageCount="$(( ageCount / 24 ))"
+			ageUnits="$([ "${ageCount}" == 1 ] && echo 'day' || echo 'days')"
+		fi
+	fi
 fi
-
 
 pr_age="(updated ${ageCount} ${ageUnits} ago)"
 
