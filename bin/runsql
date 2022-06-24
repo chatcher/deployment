@@ -40,6 +40,11 @@ gather_env_vars() {
 	db_pass="${db_host/HOST/PASSWORD}"
 	db_name="${db_host/HOST/DATABASE}"
 
+	if [ "${db_user}" == 'ORACLE_DEV1_DB_USER' ]; then
+		ORACLE_DEV1_DB_USER='pbp'
+		ORACLE_DEV1_DB_PASSWORD="${ORACLE_HPMSDEV1_READWRITE}"
+	fi
+
 	if [ -z "${db_port}" ]; then usage 'Failed to figure out a database variable for the port.'; fi
 	if [ -z "${db_user}" ]; then usage 'Failed to figure out a database variable for the user.'; fi
 	if [ -z "${db_pass}" ]; then usage 'Failed to figure out a database variable for the pass.'; fi
