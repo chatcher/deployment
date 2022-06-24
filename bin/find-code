@@ -9,6 +9,13 @@ usage() {
 	echo "usage:" >&2
 	echo "  $(basename "${0}") <query>" >&2
 	echo >&2
+	echo "options:" >&2
+	echo "  --ui    search only UI projects" >&2
+	echo "  --api   search only API projects" >&2
+	echo "  --any   look at any file type" >&2
+	echo "  --html  only look at html files" >&2
+	echo "  -f      specific a filename pattern" >&2
+	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
 
