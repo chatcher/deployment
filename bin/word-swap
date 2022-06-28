@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+
+set -e
+
+usage() {
+  echo "Try to run a project-wide search-and-replace from a local 'word-swap.csv' file" >&2
+  echo >&2
+  echo "usage:" >&2
+  echo "  $(basename "${0}")" >&2
+  echo >&2
+
+  if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+  exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+DICT_PATH='./word-swap.csv'
+FILE_REGEX='.*\.(ts|js|sql)'
+
+_translate() {
+  filename="${1}" # The source code file we're looking at.
+  old_name="${2}" # The 'search' term.
+  new_name="${3}" # The 'replacement' term.
+  tracker="${4}" # Temp file for tracking the last time we printed a progress dot.
+  timestamp=0 # When was the last time we printed a progress dot?
+  nowish="$(date +%s )"
+
+  # If we have a tracker file, then read its content into the timestamp.
+  if [ -n "${tracker}" ] && [ -f "${tracker}" ]; then
+    timestamp="$(cat "${tracker}")"
+  fi
+
+  if [ -f "${1}" ]; then
+    # Grep the whole file, looking for the 'search' term:
+    #  '-n' to includes the line number,
+    #  '-C 3' to include three lines of context;
+    # remove any indentation so that printed lines are shorter,
+    # highlight the found 'search' term in the line.
+    discovery="$(grep -n -C 3 "${old_name}" "${filename}" | sed -E -e 's/^([0-9]+.) */\1 /' -e "s/(${old_name})/"$'\033'"[33m\1"$'\033'"[m/g")"
+
+    # If we found the 'search' term:
+    if [ -n "${discovery}" ]; then
+      echo >&2
+      echo -e "${I_CS} ${filename} ${N_CS}" >&2
+      echo "${discovery}" >&2
+
+      # Replace all occurrences of the 'search' term with the 'replacement' term.
+      sed -i '' -E -e "s/${old_name}/${new_name}/g" "${filename}"
+
+      # If we have a tracking file, then update the tracker:
+      if [ -n "${tracker}" ] && [ -f "${tracker}" ]; then
+        # Grab the latest timestamp in case file update took a moment.
+        nowish="$(date +%s )"
+        echo "$((nowish + 1))" > "${tracker}"
+      fi
+    elif (( timestamp < nowish )); then
+      # Print a progress dot and update the tracker.
+      echo -n '.' >&2
+      if [ -n "${tracker}" ] && [ -f "${tracker}" ]; then
+        echo "$((nowish + 1))" > "${tracker}"
+      fi
+    fi
+  fi
+}
+# Export this function so it's available in subshells.
+export -f _translate
+
+translate() {
+  old_name="${1}"
+  new_name="${2}"
+
+  echo >&2
+  echo -e "${S_CS} ${old_name} ${N_CS}->${S_CS} ${new_name} ${N_CS}" >&2
+  # Find all files whose name matches the regex,
+  # but are not among the coverage files
+  # and are not in node_modules.
+  # For each file, run the actual translation.
+  # shellcheck disable=SC2038
+  find -E . -type f -regex "${FILE_REGEX}" -not -path '*/coverage/*' -not -path '*/node_modules/*' | xargs -o -I {} bash -c '_translate "$@"' _ {} "${old_name}" "${new_name}" "${tracker}"
+}
+
+# Temp tracker file for storing the progress timestamp between subshells.
+tracker="$(mktemp)"
+# Clean up after ourselves.
+trap 'rm -rf "${tracker}"' EXIT
+
+if [ -f "${DICT_PATH}" ]; then
+  # Process the translation file.
+  while read -r line || [ -n "$line" ]; do
+    old_name="${line%%,*}" # get first value
+    line="${line#*,}" # remove first value and comma
+    new_name="${line%%,*}" # get second value
+
+    if [ -n "${old_name}" ] && [ -n "${new_name}" ]; then
+      translate "${old_name}" "${new_name}"
+    fi
+  done < "${DICT_PATH}"
+else
+  usage "Not Found: ${DICT_PATH}" >&2
+fi
