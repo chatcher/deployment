@@ -17,7 +17,7 @@ usage() {
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
 DICT_PATH='./word-swap.csv'
-FILE_REGEX='.*\.(ts|js|sql)'
+FILE_REGEX='.*\.(ts|js|sql|html)'
 
 _translate() {
   filename="${1}" # The source code file we're looking at.
