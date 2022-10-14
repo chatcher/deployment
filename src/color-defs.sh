@@ -139,6 +139,22 @@ function colors() {
 		writecolor "30;48;5;${grey}" "     "
 	done
 	echo
+
+	echo
+	echo 'box drawing'
+	echo 'starts with \\e(0'
+	echo 'ends with \\e(B'
+
+	echo -e '` \e(0`\e(B'
+	echo -e 'a \e(0a\e(B'
+	echo -e 'q \e(0q\e(B'
+	echo -e 'x \e(0x\e(B'
+	echo
+	echo -e 'l w k \e(0lwk\e(B'
+	echo -e 't n u \e(0tnu\e(B'
+	echo -e 'm v j \e(0mvj\e(B'
+
+	echo
 }
 
 export colors
