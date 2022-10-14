@@ -92,6 +92,12 @@ if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 db_id="${1}"; shift || :
 sql_file="${1}"; shift || :
 
+if [ -n "${sql_file}" ]; then
+	sql_file="${sql_file#bin/sql/oracle/sql/}"
+	sql_file="${sql_file#bin/sql/aurora/sql/}"
+	sql_file="${sql_file%.sql}"
+fi
+
 db_host=
 db_port=
 db_user=
@@ -102,7 +108,6 @@ db_name=
 # (sleep 30; kill -15 -$$) &
 # killer=$!
 # trap 'kill -- -"${killer}" 2>/dev/null' EXIT
-
 
 if [[ "${db_id}" =~ oracle ]]; then
 	echo -e "${K_CS} Running Oracle query ${N_CS}" >&2
@@ -138,7 +143,7 @@ if [[ "${db_id}" =~ oracle ]]; then
 		if prompt 'Execute that as a query?'; then
 			$oracle -L "${login}" <<SQL
 SET SQLFORMAT ANSICONSOLE;
-SET PAGESIZE 1000;
+SET PAGESIZE 50000;
 SET SQLBLANKLINES ON;
 SET LONG 2000;
 SET VERIFY OFF;
