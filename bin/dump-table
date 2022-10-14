@@ -3,6 +3,30 @@
 set -e
 # set -x
 
+usage() {
+	echo "Describe the specified table and write to file in sql/{<db_id>}/tables/{schema}/{table}.txt" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") [-l <limit>] <db_id> <schema> <table>" >&2
+	echo >&2
+	echo "agruments:" >&2
+	echo "  -l <limit>" >&2
+	echo "        Dump this many records (100)." >&2
+	echo >&2
+	echo "parameters:" >&2
+	echo "  db_id" >&2
+	echo "        The type of database to run the query against. E.g. 'oracle'." >&2
+	echo "  schema" >&2
+	echo "        The name of the database to run the query in. E.g. 'common'." >&2
+	echo "  table" >&2
+	echo "        The name of the table to describe." >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
 gather_env_vars() {
 	re="$(sed -E -e 's/[^a-z]/./g' <<< "${db_id}" | tr '[:lower:]' '[:upper:]')"
 
@@ -57,28 +81,14 @@ gather_env_vars() {
 	echo -e "${K_CS} Using ${db_name} = ${!db_name} ${N_CS}" >&2
 }
 
-usage() {
-	echo "Describe the specified table and write to file in sql/{<db_id>}/tables/{schema}/{table}.txt" >&2
-	echo >&2
-	echo "usage:" >&2
-	echo "  $(basename "${0}") <db_id> <schema> <table>" >&2
-	echo >&2
-	echo "parameters:" >&2
-	echo "  db_id" >&2
-	echo "        The type of database to run the query against. E.g. 'oracle'" >&2
-	echo "  schema" >&2
-	echo "        The name of the database to run the query in. E.g. 'common'" >&2
-	echo "  table" >&2
-	echo "        The name of the table to describe" >&2
-	echo >&2
-
-	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
-
-	exit 1
-}
-
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
+limit='100'
+if [ "${1}" == '-l' ]; then
+  shift # remove '-l'
+  limit="${1}"
+	shift # remove <limit>
+fi
 
 db_id="${1}"
 schema="${2}"
@@ -129,7 +139,7 @@ if [[ "${db_id}" =~ oracle ]]; then
 		SET SQLBLANKLINES ON;
 		SET LONG 2000;
 		ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD HH:MI:SS PM';
-		SELECT ${columns} FROM ${schema}.${table} order by 1, 2 fetch first 100 rows only;
+		SELECT ${columns} FROM ${schema}.${table} order by 1, 2 fetch first ${limit} rows only;
 	"
 
 	$oracle -S -L "${login}" <<< "$query" | tee -a "${filename}"
@@ -140,7 +150,7 @@ elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
 	gather_env_vars
 
 	query="
-		SELECT ${columns} FROM ${schema}.${table} limit 100;
+		SELECT ${columns} FROM ${schema}.${table} limit ${limit};
 	"
 
 	mysql -A --table \
