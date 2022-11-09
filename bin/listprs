@@ -10,7 +10,8 @@ usage() {
 	echo "  $(basename "${0}") [-b|--body]" >&2
 	echo >&2
 	echo "options:" >&2
-	echo "  -b    Also show the Pull Request body." >&2
+	echo "  -r    Include the Pull Request review." >&2
+	echo "  -b    Include the Pull Request body." >&2
 	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
