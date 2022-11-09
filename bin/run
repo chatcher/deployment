@@ -132,7 +132,7 @@ if [[ "${mode}" =~ default ]]; then
 elif [[ "${mode}" =~ test ]]; then
 	if [ "${test_script}" = 'ng test' ]; then
 		preamble "[t1] Testing via ${npx} ng test watch=true"
-		$npx ng test --watch=true --code-coverage --source-map
+		$npx ng test --source-map=false --watch=true --code-coverage --source-map
 
 	elif [[ "${test_script}" =~ mocha ]]; then
 		if [ "${npx}" = 'yarn' ]
@@ -164,7 +164,7 @@ elif [[ "${mode}" =~ test ]]; then
 			# runner="${nyc}" #default
 			# reporter='--reporter=lcov'
 			# recursive='--exit'
-			watch_switch=''
+			watch_switch='--watch' # 'nodemon' # EADDRINUSE error when mocha tries to watch files
 			watchers=''
 
 		elif [ "${npx}" = 'yarn' ] && [ "${nyc}" = 'istanbul' ]; then
@@ -173,7 +173,7 @@ elif [[ "${mode}" =~ test ]]; then
 			runner=''
 			reporter=''
 			# recursive='--exit'
-			watch_switch=''
+			watch_switch='' # EADDRINUSE error when mocha tries to watch files
 			watchers=''
 
 		elif [ "${npx}" = 'npx' ] && [ "${nyc}" = 'nyc' ]; then
@@ -220,6 +220,13 @@ elif [[ "${mode}" =~ test ]]; then
 			usage 'I dunno what to do with this.'
 		fi
 
+		echo "runner: ${runner}" >&2
+		echo "reporter: ${reporter}" >&2
+		echo "test_path: ${test_path}" >&2
+		echo "recursive: ${recursive}" >&2
+		echo "watch_switch: ${watch_switch}" >&2
+		echo "watchers: ${watchers[@]}" >&2
+
 		if [ -z "${runner}" ] && [ -z "${reporter}" ]; then
 			usage "I guess that's not going to work"
 			# $npx nyc --reporter=lcov mocha -b "${test_path}" "${watch_switch}" "${watchers}" && pass || fail
@@ -227,6 +234,8 @@ elif [[ "${mode}" =~ test ]]; then
 			$npx "${reporter}" mocha -b "${test_path}" "${recursive}" "${watch_switch}" ${watchers[@]} && pass || fail
 		elif [ -z "${reporter}" ]; then
 			$npx "${runner}" mocha -b "${test_path}" "${recursive}" "${watch_switch}" ${watchers[@]} && pass || fail
+		# elif [ "${watch_switch}" == 'nodemon' ]; then
+		# 	$npx "${watch_switch}" --exec "\"${npx} ${runner} ${reporter} mocha -b ${test_path} ${recursive}\"" ${watchers[@]} 'src/api/**' && pass || fail
 		else
 			$npx "${runner}" "${reporter}" mocha -b "${test_path}" "${recursive}" "${watch_switch}" ${watchers[@]} && pass || fail
 		fi
