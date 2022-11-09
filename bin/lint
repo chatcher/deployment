@@ -40,7 +40,12 @@ lint() {
 lint-all() {
 	echo -e "${S_CS} Linting... ${N_CS}" >&2
 	list | xargs eslint --ignore-pattern '**\.**'
-	echo -e "${S_CS} Done ${N_CS}" >&2
+	if [ "$?" = 0 ]; then
+		echo -e "${S_CS} Done ${N_CS}" >&2
+	else
+		echo -e "${S_CS} Done ${N_CS}" >&2
+		return 1
+	fi
 }
 
 lint-fix() {
