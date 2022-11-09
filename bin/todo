@@ -1,0 +1,139 @@
+#!/usr/bin/env bash
+
+set -e
+# set -x
+
+root_path="${HOME}/Documents/TODO"
+todo_file_name="${root_path}/todo.txt"
+done_file_name="${root_path}/done.txt"
+
+mkdir -p "${root_path}"
+touch "${todo_file_name}"
+touch "${done_file_name}"
+
+usage() {
+	echo "Maintain a list of 'TODO' items." >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") [-d <id> ...] [-r <id> ...] [<item title>]" >&2
+	echo >&2
+	echo "options:" >&2
+	echo "  -d <id> [<id> ...]    Mark the item(s) as done" >&2
+	echo "  -r <id> [<id> ...]    Reset the item(s) to the end" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+list_todo_items() {
+	echo -e "${S_CS} TODO: ${N_CS}" >&2
+	count=0
+	while read -u 3 -r entry; do
+		count="$((count + 1))"
+		echo -e "${count} - ${entry}" >&2
+	done 3< "${todo_file_name}"
+	echo -e "${S_CS} Done, ${count} items ${N_CS}" >&2
+}
+
+update_todo_items() {
+	id="${1}"
+	temp_file="$(mktemp)"
+
+	echo -e "${S_CS} DONE: ${N_CS}" >&2
+
+	count=0
+	while read -u 3 -r entry; do
+		count="$((count + 1))"
+		if [[ " ${@} " =~ " ${count} " ]]; then
+			tmp="${entry#*[}"
+			start_date="${tmp%%]*}"
+			title="${tmp#*: }"
+			end_date="$(date '+%Y-%m-%d')"
+			entry="DONE [${start_date}, ${end_date}]: ${title}"
+			echo -e "${I_CS} ${count} - ${entry} ${N_CS}" >&2
+			echo "${entry}" >> "${done_file_name}"
+		else
+			echo -e "${K_CS} ${count} - ${entry} ${N_CS}" >&2
+			echo "${entry}" >> "${temp_file}"
+		fi
+	done 3< "${todo_file_name}"
+	mv "${temp_file}" "${todo_file_name}"
+	echo -e "${S_CS} Done, ${count} items ${N_CS}" >&2
+}
+
+reset_todo_items() {
+	id="${1}"
+	temp_file="$(mktemp)"
+
+	echo -e "${S_CS} RESET: ${N_CS}" >&2
+
+	count=0
+	while read -u 3 -r entry; do
+		count="$((count + 1))"
+		if [[ " ${@} " =~ " ${count} " ]]; then
+			echo -e "${I_CS} ${count} - ${entry} ${N_CS}" >&2
+		else
+			echo "${entry}" >> "${temp_file}"
+		fi
+	done 3< "${todo_file_name}"
+
+	count=0
+	while read -u 3 -r entry; do
+		count="$((count + 1))"
+		if [[ " ${@} " =~ " ${count} " ]]; then
+			tmp="${entry#*[}"
+			title="${tmp#*: }"
+			start_date="$(date '+%Y-%m-%d')"
+			entry="TODO [${start_date}]: ${title}"
+			echo "${entry}" >> "${temp_file}"
+		else
+			echo -e "${K_CS} ${count} - ${entry} ${N_CS}" >&2
+		fi
+	done 3< "${todo_file_name}"
+
+	mv "${temp_file}" "${todo_file_name}"
+	echo -e "${S_CS} Done, ${count} items ${N_CS}" >&2
+}
+
+get_next_id() {
+	echo 0
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+mode='list'
+ids=()
+
+if (( $# > 0 )); then
+	mode='add'
+fi
+
+while (( $# > 0 )); do
+	if [[ "${1}" == '-d' ]]; then
+		mode='done'
+	elif [[ "${1}" == '-r' ]]; then
+		mode='reset'
+	elif [ "${mode}" == 'add' ]; then
+		title="${title}${title:+ }${1}"
+	elif [[ "${1}" =~ ^[0-9]+$ ]]; then
+		ids+=("${1}")
+	else
+		usage "Unexpected argument: '${1}'"
+	fi
+	shift
+done
+
+if [ "${mode}" == 'list' ]; then
+	list_todo_items
+elif [ "${mode}" == 'add' ]; then
+	date_str="$(date '+%Y-%m-%d')"
+	entry="TODO [${date_str}]: ${title}"
+	echo -e "${S_CS} ${entry} ${N_CS}" >&2
+	echo "${entry}" >> "${todo_file_name}"
+elif [ "${mode}" == 'done' ]; then
+	update_todo_items "${ids[@]}"
+elif [ "${mode}" == 'reset' ]; then
+	reset_todo_items "${ids[@]}"
+fi
