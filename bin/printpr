@@ -9,7 +9,8 @@ usage() {
 	echo "  $(basename "${0}") [-x] <arguments>" >&2
 	echo >&2
 	echo "options:" >&2
-	echo "  -x    Some unknown option" >&2
+	echo "  -b       Include the PR body." >&2
+	echo "  -r    Include the PR reviews." >&2
 	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
@@ -20,10 +21,18 @@ usage() {
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
 show_body=false
-if [[ "${1}" =~ ^-?-b(ody)?$ ]]; then
-	show_body=true
+show_reviews=false
+while [[ "${1}" =~ ^- ]]; do
+	if [[ "${1}" =~ b ]]; then
+		show_body=true
+	fi
+
+	if [[ "${1}" =~ r ]]; then
+		show_reviews=true
+	fi
+
 	shift
-fi
+done
 
 details="${1}"
 
@@ -32,17 +41,15 @@ if [ -z "${details}" ]; then
 fi
 
 pr_number="$(jq -r '.number' <<< "${details}")"
+pr_user="$(jq -r '.user' <<< "${details}")"
 pr_open="$(jq -r '.open' <<< "${details}" | tr '[:upper:]' '[:lower:]')"
 pr_state="$(jq -r '.state' <<< "${details}" | tr '[:upper:]' '[:lower:]')"
-pr_title="$(jq -r '.title' <<< "${details}")"
 pr_date="$(jq -r '.date' <<< "${details}")"
-pr_user="$(jq -r '.user' <<< "${details}")"
-pr_body="$(jq -r '.body' <<< "${details}" | sed -e 's/\\r\\n/Ω/g' | tr 'Ω' '\n')"
-pr_head="$(jq -r '.head' <<< "${details}")"
 pr_base="$(jq -r '.base' <<< "${details}")"
+pr_head="$(jq -r '.head' <<< "${details}")"
+pr_title="$(jq -r '.title' <<< "${details}")"
 pr_link="$(jq -r '.link' <<< "${details}")"
 
-reviews="$(jq -c '.reviews//[]|.[]' <<< "${details}")"
 
 open_color="${E_CS}"
 state_color="${E_CS}"
@@ -81,56 +88,64 @@ echo -e "${D_CS}#${pr_number} ${I_CS}${pr_user} ${K_CS}- ${open_color}${pr_open}
 echo -e "${K_CS}${pr_base} <- ${W_CS}${pr_head}${N_CS}" >&2
 echo -e "${N_CS}${pr_title}${N_CS}" >&2
 echo -e "${L_CS}${pr_link}${N_CS}" >&2
-if [ "${show_body}" = true ] && [ -n "${pr_body}" ]; then
-	echo -e "${pr_body}" >&2
+
+if [ "${show_body}" = true ]; then
+	pr_body="$(jq -r '.body' <<< "${details}" | sed -e 's/\\r\\n/Ω/g' | tr 'Ω' '\n')"
+	if [ -n "${pr_body}" ]; then
+		echo -e "${pr_body}" >&2
+	fi
 fi
 
-declare -A review_users
-declare -A approval
-approval[count]=0
-approval[total]=0
-approval[ch_rq]=0
 
+if [ "${show_reviews}" = true ]; then
+	reviews="$(jq -c '.reviews//[]|.[]' <<< "${details}")"
+	declare -A review_users
+	declare -A approval
+	approval[count]=0
+	approval[total]=0
+	approval[ch_rq]=0
 
-if [ -n "${reviews}" ]; then
-	while read -u 3 -r review; do
-		review_user="$(jq -r '.user' <<< "${review}")"
-		review_status="$(jq -r '.state' <<< "${review}")"
+	if [ -n "${reviews}" ]; then
+		while read -u 3 -r review; do
+			review_user="$(jq -r '.user' <<< "${review}")"
+			review_status="$(jq -r '.state' <<< "${review}")"
 
-		review_users[$review_user]="${review_status}"
-	done 3<<<"${reviews}"
+			review_users[$review_user]="${review_status}"
+		done 3<<<"${reviews}"
+	fi
+
+	for review_user in "${!review_users[@]}"; do
+		review_color="${K_CS}"
+		review_status="${review_users[$review_user]}"
+
+		approval[total]="$(( approval[total] + 1 ))"
+
+		case "${review_status}" in
+			APPROVED)
+				approval[count]="$(( approval[count] + 1 ))"
+				review_color="\033[38;5;$((124+33))m"
+				;;
+			CHANGES_REQUESTED)
+				approval[ch_rq]="$(( approval[ch_rq] + 1 ))"
+				review_color="\033[38;5;$((196+21))m"
+				;;
+			*) echo -e "${A_CS} Unknown review status: '${review_status}'${N_CS}" >&2
+		esac
+
+		echo -e "${review_user}: ${review_color}${review_status}${N_CS}" >&2
+	done
+
+	approval_color="${I_CS}"
+	if (( approval[count] > 1 )); then
+		approval_color="${S_CS}"
+	fi
+
+	if (( approval[count] > 0 )); then
+		echo -e "${approval_color}Approved: ${approval[count]} / ${approval[total]}${N_CS}" >&2
+	fi
+
+	if (( approval[ch_rq] > 0 )); then
+		echo -e "${E_CS}Blockers: ${approval[ch_rq]} / ${approval[total]}${N_CS}" >&2
+	fi
 fi
 
-for review_user in "${!review_users[@]}"; do
-	review_color="${K_CS}"
-	review_status="${review_users[$review_user]}"
-
-	approval[total]="$(( approval[total] + 1 ))"
-
-	case "${review_status}" in
-		APPROVED)
-			approval[count]="$(( approval[count] + 1 ))"
-			review_color="\033[38;5;$((124+33))m"
-			;;
-		CHANGES_REQUESTED)
-			approval[ch_rq]="$(( approval[ch_rq] + 1 ))"
-			review_color="\033[38;5;$((196+21))m"
-			;;
-		*) echo -e "${A_CS} Unknown review status: '${review_status}'${N_CS}" >&2
-	esac
-
-	echo -e "${review_user}: ${review_color}${review_status}${N_CS}" >&2
-done
-
-approval_color="${I_CS}"
-if (( approval[count] > 1 )); then
-	approval_color="${S_CS}"
-fi
-
-if (( approval[count] > 0 )); then
-	echo -e "${approval_color}Approved: ${approval[count]} / ${approval[total]}${N_CS}" >&2
-fi
-
-if (( approval[ch_rq] > 0 )); then
-	echo -e "${E_CS}Blockers: ${approval[ch_rq]} / ${approval[total]}${N_CS}" >&2
-fi
