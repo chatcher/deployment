@@ -25,5 +25,5 @@ if ! [ -d '.git' ]; then
 	usage 'No .git directory found in path; better luck next time.'
 fi
 
-open . -a 'Sublime Text'
-open . -a 'Sublime Merge'
+open -a 'Sublime Text' .
+open -a 'Sublime Merge' .
