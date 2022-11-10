@@ -32,7 +32,7 @@ list_todo_items() {
 	count=0
 	while read -u 3 -r entry; do
 		count="$((count + 1))"
-		echo -e "${count} - ${entry}" >&2
+		echo -e "\t ${count} - ${entry}" >&2
 	done 3< "${todo_file_name}"
 	echo -e "${S_CS} Done, ${count} items ${N_CS}" >&2
 }
@@ -52,10 +52,10 @@ update_todo_items() {
 			title="${tmp#*: }"
 			end_date="$(date '+%Y-%m-%d')"
 			entry="DONE [${start_date}, ${end_date}]: ${title}"
-			echo -e "${I_CS}$(strike "${count} - ${entry}")${N_CS}" >&2
+			echo -e "\t${I_CS} $(strike "${count} - ${entry}")${N_CS}" >&2
 			echo "${entry}" >> "${done_file_name}"
 		else
-			echo -e "${count} - ${entry}" >&2
+			echo -e "\t ${count} - ${entry}" >&2
 			echo "${entry}" >> "${temp_file}"
 		fi
 	done 3< "${todo_file_name}"
@@ -69,12 +69,14 @@ reset_todo_items() {
 
 	echo -e "${S_CS} RESET: ${N_CS}" >&2
 
+	seen=0
 	count=0
 	while read -u 3 -r entry; do
 		count="$((count + 1))"
 		if [[ " ${@} " =~ " ${count} " ]]; then
-			echo -e "${I_CS} ${count} - ${entry} ${N_CS}" >&2
+			seen="$((seen + 1))"
 		else
+			echo -e "\t${K_CS} $((count - seen)) - ${entry} ${N_CS}" >&2
 			echo "${entry}" >> "${temp_file}"
 		fi
 	done 3< "${todo_file_name}"
@@ -87,9 +89,8 @@ reset_todo_items() {
 			title="${tmp#*: }"
 			start_date="$(date '+%Y-%m-%d')"
 			entry="TODO [${start_date}]: ${title}"
+			echo -e "\t${I_CS} $(strike "${count}") - ${entry} ${N_CS}" >&2
 			echo "${entry}" >> "${temp_file}"
-		else
-			echo -e "${K_CS} ${count} - ${entry} ${N_CS}" >&2
 		fi
 	done 3< "${todo_file_name}"
 
