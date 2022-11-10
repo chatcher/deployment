@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 set -e
-set -x
 
 usage() {
 	echo "Render text with strike-though applied" >&2
