@@ -52,10 +52,10 @@ update_todo_items() {
 			title="${tmp#*: }"
 			end_date="$(date '+%Y-%m-%d')"
 			entry="DONE [${start_date}, ${end_date}]: ${title}"
-			echo -e "${I_CS} ${count} - ${entry} ${N_CS}" >&2
+			echo -e "${I_CS}$(strike "${count} - ${entry}")${N_CS}" >&2
 			echo "${entry}" >> "${done_file_name}"
 		else
-			echo -e "${K_CS} ${count} - ${entry} ${N_CS}" >&2
+			echo -e "${count} - ${entry}" >&2
 			echo "${entry}" >> "${temp_file}"
 		fi
 	done 3< "${todo_file_name}"
