@@ -20,6 +20,10 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
+if [ -z "${GITHUB_TOKEN}" ]; then
+	usage 'env var "GITHUB_TOKEN" not set'
+fi
+
 # if has-staged-changes; then
 # 	echo -e "${W_CS} I see staged changes. ${N_CS}" >&2
 # 	if prompt 'Do you want to create a Pull Request from the staged changes?'; then
