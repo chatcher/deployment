@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+set -e
+
+usage() {
+	echo "Render text with strike-though applied" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <text>" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+echo -e "$(sed 's/.\{1\}/&\\\u0336/g' <<< "${@}")"
