@@ -1,3 +1,5 @@
 #!/usr/bin/env bash
 
+echo -e "${S_CS} Loading base branch... ${N_CS}" >&2
+
 git remote show "origin" | grep 'HEAD branch:' | sed -E -e 's/.*: //'
