@@ -112,6 +112,7 @@ echo -e "${I_CS} watch_dirs: ${watch_dirs[*]} ${N_CS}" >&2
 if [[ "${mode}" =~ default ]]; then
 	if [[ "${dev_script}" =~ nodemon ]]; then
 		preamble "[h1] Hosting via ${npx} nodemon"
+
 		if [ "${npx}" = 'yarn' ]
 		then temp_env 'development' 'debug'
 		else temp_env 'dev1' 'debug'
@@ -127,6 +128,27 @@ if [[ "${mode}" =~ default ]]; then
 		echo -e "dev_script:     '${dev_script}'" >&2
 		echo -e "start_script:   '${start_script}'" >&2
 		usage 'I dunno how to run'
+	fi
+
+elif [[ "${mode}" =~ debug ]]; then
+	if [[ "${dev_script}" =~ nodemon ]]; then
+		preamble "[h1] Hosting via ${npx} nodemon"
+
+		if [ "${npx}" = 'yarn' ]
+		then temp_env 'development' 'debug'
+		else temp_env 'dev1' 'debug'
+		fi
+
+		node inspect "./${main_script}"
+
+	elif [ "${start_script}" != 'null' ]; then
+		preamble "[h22] Running npm start"
+		node inspect "./${main_script}"
+
+	else
+		echo -e "dev_script:     '${dev_script}'" >&2
+		echo -e "start_script:   '${start_script}'" >&2
+		usage 'I dunno how to debug'
 	fi
 
 elif [[ "${mode}" =~ test ]]; then
