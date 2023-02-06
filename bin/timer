@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+set -e
+# set -x
+
+usage() {
+	echo "Description" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <duration> [<message...>]" >&2
+	echo >&2
+	echo "params:" >&2
+	echo "  duration    how long to wait" >&2
+	echo "  message     message to print and read" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+timer() ({
+	if [ -z "${1}" ]; then usage 'Missing parameter: duration'; fi
+	if [[ "${1}" =~ [^0-9] ]]; then usage 'Invalid parameter: duration'; fi
+
+	# code goes here ...
+
+	SLEEP_TIME="${1}"
+	shift
+
+	sleep "${SLEEP_TIME}"
+
+	# echo "${@}"
+	say "${@}"
+})
+
+timer "$@" &
