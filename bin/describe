@@ -45,7 +45,6 @@ gather_env_vars() {
 	if [ -z "${db_pass}" ]; then usage 'Failed to figure out a database variable for the pass.'; fi
 	if [ -z "${db_name}" ]; then usage 'Failed to figure out a database variable for the name.'; fi
 
-
 	if [ -z "${!db_host}" ]; then usage "Picked up ${db_host} for the host, but it has no value.'"; fi
 	if [ -z "${!db_port}" ]; then usage "Picked up ${db_port} for the port, but it has no value.'"; fi
 	if [ -z "${!db_user}" ]; then usage "Picked up ${db_user} for the user, but it has no value.'"; fi
@@ -80,7 +79,6 @@ usage() {
 }
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
-
 
 db_id="${1}"
 schema="${2}"
