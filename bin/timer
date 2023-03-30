@@ -7,12 +7,11 @@ usage() {
 	echo "Description" >&2
 	echo >&2
 	echo "usage:" >&2
-	echo "  $(basename "${0}") <duration> [<message...> | -c <command>]" >&2
+	echo "  $(basename "${0}") <duration> [<command...>" >&2
 	echo >&2
 	echo "params:" >&2
 	echo "  duration    how long to wait" >&2
-	echo "  message     message to speak" >&2
-	echo "  -c command  run a command instead" >&2
+	echo "  command     command to run after the delay" >&2
 	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
@@ -31,13 +30,9 @@ timer() ({
 
 	sleep "${SLEEP_TIME}"
 
-	if [ "${1}" == '-c' ]; then
-		shift
-		# shellcheck disable=SC2068
-		$@
-	else
-		say "${@}"
-	fi
+	# shellcheck disable=SC2068
+	$@
 })
 
 timer "$@" &
+echo -e "${S_CS} Okay ${N_CS}" >&2
