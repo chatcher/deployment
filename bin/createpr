@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set -e
-set -x
+# set -x
 
 usage() {
 	echo "Create a draft Pull Request from the current branch." >&2
@@ -10,7 +10,7 @@ usage() {
 	echo "  $(basename "${0}") <title>" >&2
 	echo >&2
 	echo "options:" >&2
-	echo "  -b <branch>  Use <branch> as base branch isntead of default." >&2
+	echo "  -b <branch>  Use <branch> as base branch instead of default." >&2
 	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
@@ -24,20 +24,18 @@ if [ -z "${GITHUB_TOKEN}" ]; then
 	usage 'env var "GITHUB_TOKEN" not set'
 fi
 
-# if has-staged-changes; then
-# 	echo -e "${W_CS} I see staged changes. ${N_CS}" >&2
-# 	if prompt 'Do you want to create a Pull Request from the staged changes?'; then
-# 		chainpr "$@"
-# 		exit
-# 	else
-# 		usage "Unexpected staged changes."
-# 	fi
-# fi
-
 if [ "${1}" == '-b' ]; then
 	shift
 	base="${1}"
 	shift
+elif [ "${1}" == 'hotfix' ]; then
+	base='hotfix'
+else
+	base="$(get-repo-base-branch)"
+fi
+
+if [ -z "${base}" ]; then
+	usage "Missing base branch."
 fi
 
 bodyfile="$(mktemp)"
@@ -91,11 +89,8 @@ body="$(tail -n +2 "${bodyfile}" | sed -e '/./,$!d' | tr '\n' 'Î©' | sed -e 's/Î
 rm "${bodyfile}"
 
 # message="$(generate-commit-message "${title}")"
-branch="$(generate-branch-name "${title}")"
+branch="$(generate-branch-name -b "${base}" "${title}")"
 draft='true'
-if [ -z "${base}" ]; then
-	base="$(get-repo-base-branch)"
-fi
 
 if [ -z "${title}" ]; then usage "Pull Request title is required."; fi
 # if [ -z "${message}" ]; then usage "Could not derive commit message."; fi
@@ -106,6 +101,10 @@ if [ -z "${base}" ]; then usage "Could not determine base branch."; fi
 # if has-remote-branch "${branch}" && ! [ "${branch}" != "$(get-current-branch)" ]; then
 # 	usage "Branch already exists: '${branch}'"
 # fi
+
+if [ "${base}" = 'hotfix' ]; then
+	title="[hotfix] ${title}"
+fi
 
 read -d '' -r data <<JSON || :
 {
@@ -146,14 +145,14 @@ if [ -z "${prn}" ] || [ "${prn}" == 'null' ]; then
 fi
 
 
-echo -e "${S_CS}Updating SQ link...${N_CS}" >&2
-body="$(sed -E -e "s/pullRequest=TBD/pullRequest=${prn}/" <<< "${body}")"
-read -d '' -r data <<JSON || :
-{ "body": "${body}" }
-JSON
-accept_header='Accept: application/vnd.github.v3+json'
-github_url="$(get-repo-api)/repos/$(get-repo-path)/pulls/${prn}"
-curl -X PATCH -H "${auth_header}" -H "${accept_header}" "${github_url}" -d "${data}" -s
+# echo -e "${S_CS}Updating SQ link...${N_CS}" >&2
+# body="$(sed -E -e "s/pullRequest=TBD/pullRequest=${prn}/" <<< "${body}")"
+# read -d '' -r data <<JSON || :
+# { "body": "${body}" }
+# JSON
+# accept_header='Accept: application/vnd.github.v3+json'
+# github_url="$(get-repo-api)/repos/$(get-repo-path)/pulls/${prn}"
+# curl -X PATCH -H "${auth_header}" -H "${accept_header}" "${github_url}" -d "${data}" -s
 
 
 echo -e "${S_CS}Self-assigning PR...${N_CS}" >&2
