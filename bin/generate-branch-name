@@ -5,9 +5,6 @@ usage() {
 	echo "usage:" >&2
 	echo "  $(basename "${0}") [-b <base>] <string...>" >&2
 	echo >&2
-	echo "options:" >&2
-	echo "  -b <prefix>  Use <prefix> as the branch group." >&2
-	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
 
@@ -15,12 +12,6 @@ usage() {
 }
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
-
-if [ "${1}" = '-b' ]; then
-	shift
-	prefix="${1}"
-	shift
-fi
 
 branch="${*}"
 
@@ -34,8 +25,4 @@ branch="$(tr '-' '_' <<< "${branch}")"
 branch="$(sed -E -e 's/[^a-z0-9_]+/-/g' -e 's/(^-|-$)//g' <<< "${branch}")"
 
 # done
-if [ -z "${prefix}" ]; then
-	echo "${branch}" >&1
-else
-	echo "${prefix}/${branch}" >&1
-fi
+echo "${branch}" >&1

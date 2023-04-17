@@ -89,7 +89,7 @@ body="$(tail -n +2 "${bodyfile}" | sed -e '/./,$!d' | tr '\n' 'Î©' | sed -e 's/Î
 rm "${bodyfile}"
 
 # message="$(generate-commit-message "${title}")"
-branch="$(generate-branch-name -b "${base}" "${title}")"
+branch="$(generate-branch-name "${title}")"
 draft='true'
 
 if [ -z "${title}" ]; then usage "Pull Request title is required."; fi
