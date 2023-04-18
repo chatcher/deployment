@@ -44,7 +44,6 @@ header=()
 infix=()
 while (( $# > 0 )); do
 	line="${1}"
-	echo "${line}" >&2
 	if [[ "${line}" =~ http ]]; then
 		suffix="${line##*/}"
 		header+=("${suffix}")
