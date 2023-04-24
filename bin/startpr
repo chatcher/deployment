@@ -29,6 +29,11 @@ if ! has-staged-changes; then
 	fi
 fi
 
+if [ "${1}" == '-b' ]; then
+	shift
+	shift
+fi
+
 checkout "tmp/$(date +%s)"
 git commit -S -m "${*}" --no-verify
 createpr "${@}"
