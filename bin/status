@@ -43,10 +43,10 @@ line 'git status'>&2
 git status -bs >&2
 
 line 'git branch' >&2
-git branch >&2
+git branch | sed -e '/tmp/d' >&2
 
-line 'pull requests' >&2
-listprs "${@}" >&2
+# line 'pull requests' >&2
+# listprs "${@}" >&2
 
 line 'pull request' >&2
 get-pull-request-number >&2 || echo 'none' >&2
