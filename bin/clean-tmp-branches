@@ -14,12 +14,11 @@ usage() {
 
 fix_merge() {
   open -a 'Sublime Merge' .
-  prompt "Fix and complete merge?"
+  prompt "Fix and complete merge, plz."
 }
 
 if [ "$(get-current-branch)" != "$(get-repo-base-branch)" ]; then
-  git stash -u
-  checkout
+  usage "Should only be run from '$(get-repo-base-branch)'."
 fi
 
 sha="$(stash)"
@@ -34,8 +33,16 @@ while read -u 3 -r branch; do
   fi
 done 3<<< "$(git branch -l 'tmp/*')"
 
-unstash "${sha}"
 git reset "origin/$(get-repo-base-branch)"
 checkout
+
+if [ -n "${sha}" ]; then
+  echo -e "${I_CS} Previous changes have been stashed. ${N_CS}" >&2
+fi
+
+if has-changes; then
+  echo -e "${I_CS} Current changes were picked up from the temp branches. ${N_CS}" >&2
+fi
+
 
 echo -e "${S_CS} Done ${N_CS}" >&2
