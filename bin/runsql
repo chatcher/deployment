@@ -121,9 +121,9 @@ if [[ "${db_id}" =~ oracle ]]; then
   var_id=1
   while (( $# > 0 )); do
     if [[ "${1}" =~ .=. ]]; then
-      variables="DEFINE $(sed -E -e "s/=(.*)/ = '\1'/" <<< "${1}")\n${variables}"
+      variables="DEFINE $(sed -E -e "s/=(.*)/ = '\1'/" <<< "${1}")"$'\n'"${variables}"
     elif [ -n "${1}" ]; then
-      variables="DEFINE arg${var_id} = '${1}'\n${variables}"
+      variables="DEFINE arg${var_id} = '${1}'"$'\n'"${variables}"
       var_id=$(( var_id + 1))
     fi
     shift
@@ -141,15 +141,15 @@ if [[ "${db_id}" =~ oracle ]]; then
 		echo -e "${S_CS} You said: ${N_CS}" >&2
 		echo -e "${W_CS} ${sql_file} ${N_CS}" >&2
 		if prompt 'Execute that as a query?'; then
-			$oracle -L "${login}" <<SQL
-SET SQLFORMAT ANSICONSOLE;
-SET PAGESIZE 50000;
-SET SQLBLANKLINES ON;
-SET LONG 2000;
-SET VERIFY OFF;
-ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD HH:MI:SS PM';
-${sql_file};
-SQL
+			$oracle -L "${login}" <<-SQL
+				SET SQLFORMAT ANSICONSOLE;
+				SET PAGESIZE 50000;
+				SET SQLBLANKLINES ON;
+				SET LONG 2000;
+				SET VERIFY OFF;
+				ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD HH:MI:SS PM';
+				${sql_file};
+			SQL
 		else
 			usage "I don't see a sql script called ${sql_file}"
 		fi
@@ -160,30 +160,30 @@ SQL
 
 	elif [ -z "${variables}" ]; then
 		echo -e "${S_CS} Executing SQL file... ${N_CS}" >&2
-		$oracle -S -L "${login}" <<SQL
-SET SQLFORMAT ANSICONSOLE;
-SET PAGESIZE 50000;
-SET SQLBLANKLINES ON;
-SET VERIFY OFF;
-ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD HH:MI:SS PM';
-@sql/${sql_file}.sql
-SQL
+		$oracle -S -L "${login}" <<-SQL
+			SET SQLFORMAT ANSICONSOLE;
+			SET PAGESIZE 50000;
+			SET SQLBLANKLINES ON;
+			SET VERIFY OFF;
+			ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD HH:MI:SS PM';
+			@sql/${sql_file}.sql
+		SQL
 
 	else
 		echo -e "${S_CS} Executing SQL script with variables... ${N_CS}" >&2
 		echo -e "${D_CS} ${variables} ${N_CS}" >&2
-		$oracle -S -L "${login}" <<SQL
-SET SQLFORMAT ANSICONSOLE;
-SET PAGESIZE 50000;
-SET SQLBLANKLINES ON;
-SET VERIFY OFF;
-ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD HH:MI:SS PM';
-DEFINE arg1 = ''
-DEFINE arg2 = ''
-DEFINE arg3 = ''
-${variables}
-@sql/${sql_file}.sql
-SQL
+		$oracle -S -L "${login}" <<-SQL
+			SET SQLFORMAT ANSICONSOLE;
+			SET PAGESIZE 50000;
+			SET SQLBLANKLINES ON;
+			SET VERIFY OFF;
+			ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD HH:MI:SS PM';
+			DEFINE arg1 = ''
+			DEFINE arg2 = ''
+			DEFINE arg3 = ''
+			${variables}
+			@sql/${sql_file}.sql
+		SQL
 
 
 	fi
