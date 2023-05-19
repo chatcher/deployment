@@ -148,6 +148,9 @@ if [[ "${db_id}" =~ oracle ]]; then
 				SET LONG 2000;
 				SET VERIFY OFF;
 				ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD HH:MI:SS PM';
+				DEFINE arg1 = ''
+				DEFINE arg2 = ''
+				DEFINE arg3 = ''
 				${sql_file};
 			SQL
 		else
@@ -166,6 +169,9 @@ if [[ "${db_id}" =~ oracle ]]; then
 			SET SQLBLANKLINES ON;
 			SET VERIFY OFF;
 			ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD HH:MI:SS PM';
+			DEFINE arg1 = ''
+			DEFINE arg2 = ''
+			DEFINE arg3 = ''
 			@sql/${sql_file}.sql
 		SQL
 
