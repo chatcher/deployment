@@ -4,7 +4,19 @@ set -e
 set -x
 
 squish_stash() {
-	git stash apply >&2 || prompt 'You wanna fix that crap?'
+	if STASH_RESPONSE="$(git stash apply 2>&1)"; then
+		echo -e  "${S_CS} Stash applied cleanly. ${N_CS}" >&2
+	else
+		while read -u 3 -r; do
+			if [[ "${REPLY}" =~ already\ exists,\ no\ checkout ]]; then
+				FILE_NAME="$(sed -E -e 's/ already exists, no checkout//' <<< "${REPLY}")"
+				if [ -e "${FILE_NAME}" ]; then
+					rm -r "${FILE_NAME}" >&2
+				fi
+			fi
+		done 3<<< "${STASH_RESPONSE}"
+		git stash apply >&2 || prompt 'You wanna fix that crap?'
+	fi
 	git stash drop >&2
 	git add . >&2
 
