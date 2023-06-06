@@ -138,8 +138,13 @@ prn="$(jq '.number' <<< "${response}")"
 user="$(jq -r '.user.login' <<< "${response}")"
 
 if [ -z "${prn}" ] || [ "${prn}" == 'null' ]; then
-	echo "${response}" >&2
-	echo "Something bad happened." >&2
+	ERROR_MESSAGE="$(jq -r '.errors[0].message' <<< "${response}")"
+	if [ "${ERROR_MESSAGE}" != 'null' ]; then
+		echo -e "${A_CS} ${ERROR_MESSAGE} ${N_CS}" >&2
+	else
+		echo "${response}" >&2
+		echo -e "${A_CS} Something bad happened. ${N_CS}" >&2
+	fi
 	exit 1
 fi
 
