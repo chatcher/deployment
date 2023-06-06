@@ -99,15 +99,11 @@ git_checkout() {
 		echo -e "${S_CS} Creating temp branch... ${N_CS}" >&2
 		git checkout -b "${branch}" || usage "Failed to checkout ${branch}"
 
-	elif prompt "Create branch? ${branch}"; then
+	else
 		echo -e "${S_CS} Creating new branch... ${N_CS}" >&2
 		git checkout -b "${branch}" || usage "Failed to checkout ${branch}"
-		if prompt "Push to remote?"; then
-			git push -u origin "${branch}" --no-verify
-		fi
+		git push -u origin "${branch}" --no-verify
 
-	else
-		usage 'Well, nevermind then.'
 	fi
 
 	if has-remote-branch  "${branch}"; then
