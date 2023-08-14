@@ -92,11 +92,26 @@ if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 db_id="${1}"; shift || :
 sql_file="${1}"; shift || :
 
-if [ -n "${sql_file}" ]; then
-	sql_file="${sql_file#bin/sql/oracle/sql/}"
-	sql_file="${sql_file#bin/sql/aurora/sql/}"
-	sql_file="${sql_file%.sql}"
+cd "$(dirname "${BASH_SOURCE[0]}")/sql"
+
+# echo "${sql_file}"
+# pwd
+# ls -l "./aurora/sql//dpn"  # // | grep -- "${sql_file}"
+
+if [ -f "${sql_file}" ]; then
+	:
+elif [ -f "./oracle/sql/${sql_file}.sql" ] || [ -f "./aurora/sql/${sql_file}.sql" ] || [ -f "./local/sql/${sql_file}.sql" ]; then
+	sql_file="sql/${sql_file}.sql"
 fi
+
+# if [ -n "${sql_file}" ]; then
+# 	sql_file="${sql_file#bin/sql/oracle/sql/}"
+# 	sql_file="${sql_file#bin/sql/aurora/sql/}"
+# fi
+
+# if ! [[ "${sql_file}" =~ \.sql$ ]]; then
+# 	sql_file="${sql_file}.sql"
+# fi
 
 db_host=
 db_port=
@@ -111,7 +126,7 @@ db_name=
 
 if [[ "${db_id}" =~ oracle ]]; then
 	echo -e "${K_CS} Running Oracle query ${N_CS}" >&2
-	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
+	cd "${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
 	gather_env_vars
 
 	oracle='/Users/chad.hatcher/sqlcl/bin/sql'
@@ -129,6 +144,10 @@ if [[ "${db_id}" =~ oracle ]]; then
     shift
   done
 
+  if [ -n "${sql_file}" ] && [ ! -f "${sql_file}" ] && [ -f "sql/${sql_file}" ]; then
+  	sql_file="sql/${sql_file}"
+	fi
+
 	if [ -z "${sql_file}" ]; then
 		echo -e "${S_CS} Connecting to database... ${N_CS}" >&2
 		# kill -- -"${killer}" 2>/dev/null
@@ -137,7 +156,7 @@ if [[ "${db_id}" =~ oracle ]]; then
 		$oracle -L "${login}"
 		echo 'done'
 
-	elif [ ! -f "sql/${sql_file}.sql" ]; then
+	elif [ ! -f "${sql_file}" ]; then
 		echo -e "${S_CS} You said: ${N_CS}" >&2
 		echo -e "${W_CS} ${sql_file} ${N_CS}" >&2
 		if prompt 'Execute that as a query?'; then
@@ -157,10 +176,6 @@ if [[ "${db_id}" =~ oracle ]]; then
 			usage "I don't see a sql script called ${sql_file}"
 		fi
 
-	elif [ -f "sql/${sql_file}.dat" ]; then
-		echo -e "${S_CS} Executing SQL file with data file... ${N_CS}" >&2
-		$oracle -S -L "${login}" "@sql/${sql_file}.sql" <"sql/${sql_file}.dat"
-
 	elif [ -z "${variables}" ]; then
 		echo -e "${S_CS} Executing SQL file... ${N_CS}" >&2
 		$oracle -S -L "${login}" <<-SQL
@@ -172,7 +187,7 @@ if [[ "${db_id}" =~ oracle ]]; then
 			DEFINE arg1 = ''
 			DEFINE arg2 = ''
 			DEFINE arg3 = ''
-			@sql/${sql_file}.sql
+			@${sql_file}
 		SQL
 
 	else
@@ -188,7 +203,7 @@ if [[ "${db_id}" =~ oracle ]]; then
 			DEFINE arg2 = ''
 			DEFINE arg3 = ''
 			${variables}
-			@sql/${sql_file}.sql
+			@${sql_file}
 		SQL
 
 
@@ -196,7 +211,7 @@ if [[ "${db_id}" =~ oracle ]]; then
 
 elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
 	echo -e "${K_CS} Running Aurora query ${N_CS}" >&2
-	cd "$(dirname "${BASH_SOURCE[0]}")/sql/${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
+	cd "${db_id%-*}" || usage "Failed to cd into ${db_id} directory."
 	gather_env_vars
 
   variables=""
@@ -211,13 +226,17 @@ elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
     shift
   done
 
+  if [ -n "${sql_file}" ] && [ ! -f "${sql_file}" ] && [ -f "sql/${sql_file}" ]; then
+  	sql_file="sql/${sql_file}"
+	fi
+
 	if [ -z "${sql_file}" ]; then
 		echo -e "${S_CS} Connecting to database... ${N_CS}" >&2
 		# kill -- -"${killer}" 2>/dev/null
 		# trap - EXIT
 		mysql -A --connect-expired-password --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}"
 
-	elif [ ! -f "sql/${sql_file}.sql" ]; then
+	elif [ ! -f "${sql_file}" ]; then
 		echo -e "${S_CS} You said: ${N_CS}" >&2
 		echo -e "${W_CS} ${sql_file} ${N_CS}" >&2
 		if prompt 'Execute that as a query?'; then
@@ -228,11 +247,11 @@ elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
 
 	elif [ -z "${variables}" ]; then
 		echo -e "${S_CS} Executing SQL file... ${N_CS}" >&2
-		mysql -A --connect-expired-password --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" <"sql/${sql_file}.sql"
+		mysql -A --connect-expired-password --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" <"${sql_file}"
 
 	else
 		echo -e "${S_CS} Executing SQL script with variables... ${N_CS}" >&2
-		mysql -A --connect-expired-password --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" -e "${variables} source sql/${sql_file}.sql;"
+		mysql -A --connect-expired-password --table "--host=${!db_host}" "--port=${!db_port}" "--user=${!db_user}" "--password=${!db_pass}" -e "${variables} source ${sql_file};"
 	fi
 
 else
@@ -240,11 +259,11 @@ else
 	as_oracle=false
 	as_aurora=false
 
-	if [ -e "$(dirname "${BASH_SOURCE[0]}")/sql/oracle/sql/${db_id}.sql" ]; then
+	if [ -e "$(dirname "${BASH_SOURCE[0]}")/sql/oracle/sql/${db_id}" ]; then
 		as_oracle=true
 	fi
 
-	if [ -e "$(dirname "${BASH_SOURCE[0]}")/sql/aurora/sql/${db_id}.sql" ]; then
+	if [ -e "$(dirname "${BASH_SOURCE[0]}")/sql/aurora/sql/${db_id}" ]; then
 		as_aurora=true
 	fi
 
