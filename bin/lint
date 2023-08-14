@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+# set -e
 
 usage() {
 	echo "Run a randomly selected linter* on some randomly selected files**." >&2
@@ -23,38 +23,51 @@ usage() {
 	exit 1
 }
 
+filter_files() {
+	while read entry; do
+		if [ -f "${entry}" ]; then
+			echo "${entry}" >&1
+		fi
+	done;
+}
+
 list() {
 	if [ -z "$(git diff --staged)" ]; then
-		git diff --name-only | sed -E -e '/\.(js|ts)$/!d'
+		git diff --name-only | sed -E -e '/\.(js|ts)$/!d' | filter_files
 	else
-		git diff --name-only --staged | sed -E -e '/\.(js|ts)$/!d'
+		git diff --name-only --staged | sed -E -e '/\.(js|ts)$/!d' | filter_files
 	fi
 }
 
 lint() {
 	echo -e "${S_CS} Linting... ${N_CS}" >&2
 	list | xargs eslint
-	echo -e "${S_CS} Done ${N_CS}" >&2
-}
-
-lint-all() {
-	echo -e "${S_CS} Linting... ${N_CS}" >&2
-	list | xargs eslint --ignore-pattern '**\.**'
-	if [ "$?" = 0 ]; then
-		echo -e "${S_CS} Done ${N_CS}" >&2
+	if [ $? ]; then
+		echo -e "${S_CS} Done (clean) ${N_CS}" >&2
 	else
-		echo -e "${S_CS} Done ${N_CS}" >&2
+		echo -e "${S_CS} Done (dirty) ${N_CS}" >&2
 		return 1
 	fi
 }
 
-lint-fix() {
+lint_all() {
+	echo -e "${S_CS} Linting... ${N_CS}" >&2
+	list | xargs eslint --ignore-pattern '**\.**'
+	if [ $? ]; then
+		echo -e "${S_CS} Done (clean) ${N_CS}" >&2
+	else
+		echo -e "${S_CS} Done (dirty) ${N_CS}" >&2
+		return 1
+	fi
+}
+
+lint_fix() {
 	echo -e "${S_CS} Linting & Fixing... ${N_CS}" >&2
 	list | xargs eslint --fix
 	echo -e "${S_CS} Done ${N_CS}" >&2
 }
 
-npm-lint() {
+npm_lint() {
 	npm='npm'
 
 	if [ "$(jq -rc '.engines.yarn' package.json)" != 'null' ]; then npm=yarn; fi
@@ -62,6 +75,9 @@ npm-lint() {
 	echo -e "${I_CS} Running $npm run lint ... ${N_CS}" >&2
 	$npm run lint
 }
+
+echo eslint version
+eslint --version
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
@@ -74,7 +90,7 @@ while (( $# > 0 )); do
 			run_any=0
 			;;
 		fix)
-			lint-fix && echo -e "${S_CS} Done ${N_CS}" >&2
+			lint_fix && echo -e "${S_CS} Done ${N_CS}" >&2
 			run_any=0
 			;;
 		all)
@@ -91,10 +107,10 @@ if [ "${run_any}" == '1' ]; then
 	if [ "${run_all}" == '1' ]; then
 		if [ -z "$(list)" ]; then
 			echo -e "${S_CS} No files in index. Linting the whole project ${N_CS}" >&2
-			npm-lint
+			npm_lint
 
 		else
-			lint-all && echo -e "${S_CS} Index is clean. Linting the whole project ${N_CS}" >&2 && sleep 2 && npm-lint
+			lint_all && echo -e "${S_CS} Index is clean. Linting the whole project ${N_CS}" >&2 && sleep 2 && npm_lint
 		fi
 	else
 		lint
