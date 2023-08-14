@@ -128,7 +128,7 @@ if [ "${branch}" != "$(get-current-branch)" ]; then
 fi
 
 # git commit -S -m "${message}" --no-verify
-git push -u origin "${branch}" --no-verify
+git -c core.hooksPath=/dev/null push -u origin "${branch}" --no-verify
 auth_header="Authorization: bearer ${GITHUB_TOKEN}"
 accept_header='Accept: application/vnd.github.shadow-cat-preview+json'
 github_url="$(get-repo-api)/repos/$(get-repo-path)/pulls"

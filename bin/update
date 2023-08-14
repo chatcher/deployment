@@ -45,7 +45,7 @@ else
 	try_merge || retry_merge
 	if has-changes; then
 		git log --oneline --left-right --merge >&2 || :
-		git commit --no-edit >&2
+		git -c core.hooksPath=/dev/null commit --no-edit >&2
 	fi
-	git push --no-verify >&2
+	git -c core.hooksPath=/dev/null push --no-verify >&2
 fi

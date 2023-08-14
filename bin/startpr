@@ -30,5 +30,5 @@ if ! has-staged-changes; then
 fi
 
 checkout "tmp/$(date +%s)"
-git commit -S -m "${*}" --no-verify
+git -c core.hooksPath=/dev/null commit -S -m "${*}" --no-verify
 createpr "${@}"

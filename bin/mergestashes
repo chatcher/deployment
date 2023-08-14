@@ -21,7 +21,7 @@ squish_stash() {
 	git add . >&2
 
 	if has-staged-changes; then
-		git commit --no-verify -m "$(date +%s)" >&2
+		git -c core.hooksPath=/dev/null commit --no-verify -m "$(date +%s)" >&2
 		echo '1'
 
 	else
@@ -50,6 +50,8 @@ git stash -u
 git checkout -b "tmp/$(date +%s)"
 
 stashlimit="$(git stash list | wc -l | tr -d ' ')"
+echo -e "${I_CS} ${stashlimit} stashes to look at... ${N_CS}"
+
 stashindex=0
 stashcount=0
 while (( stashindex < stashlimit )); do
