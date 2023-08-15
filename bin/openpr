@@ -25,4 +25,4 @@ prn="$(read-prn "${1}")"
 if [ -z "${prn}" ]; then read -p 'Pull Request Number: ' -r prn; fi
 if [ -z "${prn}" ]; then usage 'Okay, nevermind.'; fi
 
-open "$(get-repo-url)/pull/${prn}"
+open "$(get-repo-link)/pull/${prn}"

@@ -20,14 +20,16 @@ fi
 URL_LINE="$(grep 'url = ' .git/config)"
 FULL_URL="${URL_LINE/*url = /}"
 
-# ssh format: git@github.com:owner/repo.git
-# https format: https://github.com/owner/repo.git
-# both maybe with .git missing from the end
+if [[ "${FULL_URL}" =~ ^git@([^:]+): ]] || [[ "${FULL_URL}" =~ ^https?://([^/]+)/ ]]; then
+  REPO_URL="${BASH_REMATCH[1]//.git/}"
+else
+  usage "Unknown URL format: '${FULL_URL}'"
+fi
 
 if [[ "${FULL_URL}" =~ ^git@[^:]+:(.*) ]] || [[ "${FULL_URL}" =~ ^https?://[^/]+/(.*) ]]; then
   OWNER_REPO="${BASH_REMATCH[1]//.git/}"
 else
-	usage "Unknown URL format: '${FULL_URL}'"
+  usage "Unknown URL format: '${FULL_URL}'"
 fi
 
-echo "${OWNER_REPO}"
+echo "https://${REPO_URL}/${OWNER_REPO}" >&1
