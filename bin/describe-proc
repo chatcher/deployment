@@ -202,7 +202,7 @@ elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
 		"--database=${!db_name}" \
 		<<< "${query}" \
 		| sed -E -e 's/'$'\t''/ /g' -e 's/\\t/    /g' -e 's/\\n/%%/g' -e 's/([^\\])(\\\\)*\\%%/\1\2\\\\n/g' -e 's/%%/\'$'\n''/g' \
-		>> "${filename}"
+		| tee -a "${filename}"
 
 else
 	usage "Unsupported database: '${db_id}'."
