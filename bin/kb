@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+
+set -e
+# set -x
+
+usage() {
+	echo "Dump knowledge about a subject." >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <subject> [knowledge]" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+KB_DIR="${HOME}/kb"
+mkdir -p "${KB_DIR}"
+cd "${KB_DIR}"
+
+SUBJECT=''
+FACT=();
+OPEN=false
+
+if [ "${1}" = '-o' ]; then
+	OPEN=true
+	shift
+fi
+
+if [ -n "${1}" ]; then
+	SUBJECT="${1}"
+	shift
+fi
+
+if [ -z "${SUBJECT}" ]; then
+	echo -e "${S_CS} Here are all the subjects I know: ${N_CS}" >&2
+
+	for FILE in *; do
+		echo -e "- ${FILE%.kb}" >&2
+	done
+
+	if [ "${OPEN}" = 'true' ]; then
+		subl "${KB_DIR}"
+	fi
+else
+	while (( $# > 0 )); do
+		FACT+=("${1}")
+	  shift
+	done
+
+	if [ -n "${FACT[*]}" ]; then
+		echo "${FACT[*]}" >> "${SUBJECT,,}.kb"
+	fi
+
+	if [ -f "${SUBJECT,,}.kb" ]; then
+		echo -e "${S_CS} ${SUBJECT}: ${N_CS}" >&2
+		cat "${SUBJECT,,}.kb"
+		if [ "${OPEN}" = 'true' ]; then
+			subl "${SUBJECT,,}.kb"
+		fi
+	else
+		echo -e "${W_CS} I dunno anything about ${SUBJECT}, sorry. ${N_CS}" >&2
+	fi
+fi
+
+echo -e "${S_CS} Done ${N_CS}" >&2
