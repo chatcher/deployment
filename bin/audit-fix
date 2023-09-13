@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+
+set -e
+set -x
+
+YARN_LOCK_FILE="./yarn.lock"
+PACKAGE_LOCK="./package-lock.json"
+NPM_VERSION="$(npm --version | sed -E -e 's/\..*//')"
+
+usage() {
+	echo "Do a bunch of stuff to try to resolve audit findings." >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}")" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+if ! [ -d .git ]; then
+	usage 'Gotta be in a git repository'
+fi
+
+is-yarn() ({
+	[ -f "${YARN_LOCK_FILE}" ]
+})
+
+downgrade-lockfile() ({
+	is-yarn && (( NPM_VERSION >= 9 ))
+})
+
+yarn-init() {
+	rm -f "${PACKAGE_LOCK}"
+	yarn
+	if downgrade-lockfile; then
+		npm i --package-lock-only --lockfile-version 2
+	else
+		npm i --package-lock-only
+	fi
+}
+
+yarn-cleanup() {
+	rm -f "${YARN_LOCK_FILE}"
+	yarn import
+	rm -f "${PACKAGE_LOCK}"
+	yarn install
+}
+
+npm-init() {
+	npm ci
+}
+
+npm-cleanup() {
+	:
+}
+
+audit-fix() {
+	if downgrade-lockfile; then
+		npm audit fix --lockfile-version 2
+	else
+		npm audit fix
+	fi
+}
+
+if is-yarn; then
+	yarn-init
+	audit-fix
+	yarn-cleanup
+
+elif [ -f "${PACKAGE_LOCK}" ]; then
+	npm-init
+	audit-fix
+	npm-cleanup
+
+else
+	usage "I don't see any lock file."
+fi
