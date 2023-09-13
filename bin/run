@@ -130,6 +130,13 @@ if [[ "${mode}" =~ default ]]; then
 		usage 'I dunno how to run'
 	fi
 
+elif [[ "${mode}" =~ prod ]]; then
+	preamble "[prod] Hosting via node"
+
+	temp_env 'production' 'debug'
+
+	node "./${main_script}"
+
 elif [[ "${mode}" =~ debug ]]; then
 	if [[ "${dev_script}" =~ nodemon ]]; then
 		preamble "[h1] Hosting via ${npx} nodemon"
