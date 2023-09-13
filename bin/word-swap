@@ -8,6 +8,12 @@ usage() {
   echo "usage:" >&2
   echo "  $(basename "${0}")" >&2
   echo >&2
+  echo "word-swap.csv:" >&2
+  echo "  CSV file should be local to the current directory." >&2
+  echo "  Two columns, no header row" >&2
+  echo "  1st column is the word to search for" >&2
+  echo "  2nd column is the word to replace it with" >&2
+  echo >&2
 
   if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
 
