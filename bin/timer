@@ -43,6 +43,10 @@ if [[ "${1}" =~ ^[[:digit:]]+$ ]]; then
 	shift;
 fi
 
+if (( $# == 0 )); then
+	usage 'Command or resource required.'
+fi
+
 if command -v "${1}" > /dev/null; then
 	timer "${DELAY}" "$@" &
 else
