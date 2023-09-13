@@ -7,7 +7,7 @@ usage() {
 	echo "Description" >&2
 	echo >&2
 	echo "usage:" >&2
-	echo "  $(basename "${0}") <-d duration> [<command...>" >&2
+	echo "  $(basename "${0}") <duration> [<command...>" >&2
 	echo >&2
 	echo "params:" >&2
 	echo "  -d duration    how many seconds to wait, default 450" >&2
@@ -38,8 +38,7 @@ if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
 DELAY=450;
 
-if [ "${1}" = '-d' ]; then
-	shift;
+if [[ "${1}" =~ ^[[:digit:]]+$ ]]; then
 	DELAY="${1}"
 	shift;
 fi
