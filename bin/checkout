@@ -134,5 +134,3 @@ elif ! [ -d '.git' ]; then
 else
 	git_checkout "$@"
 fi
-
-
