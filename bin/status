@@ -34,10 +34,10 @@ line 'git stashes' >&2
 git stash list >&2
 
 line 'git fetch' >&2
-(sleep 5; echo still fetching... >&2) &
+(sleep 5; echo -e "${K_CS} still fetching... ${N_CS}" >&2) &
 subshell="$!"
 git fetch >&2
-kill $subshell &>/dev/null
+kill $subshell &>/dev/null || :
 
 line 'git status'>&2
 git status -bs >&2
