@@ -11,6 +11,7 @@ usage() {
 	echo >&2
 	echo "options:" >&2
 	echo "  -b <branch>  Use <branch> as base branch instead of default." >&2
+	echo "  -q           Run quickly and quietly, don't prompt for confirmations." >&2
 	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
@@ -24,14 +25,27 @@ if [ -z "${GITHUB_TOKEN}" ]; then
 	usage 'env var "GITHUB_TOKEN" not set'
 fi
 
-if [ "${1}" == '-b' ]; then
-	shift
-	base="${1}"
-	shift
-elif [ "${1}" == 'hotfix' ]; then
-	base='hotfix'
-else
-	base="$(get-repo-base-branch)"
+B_QUIET='no'
+
+while (( $# > 0 )); do
+	if [ "${1}" == '-b' ]; then
+		shift
+		base="${1}"
+		shift
+	elif [ "${1}" == '-q' ]; then
+		shift
+		B_QUIET='yes'
+	else
+		break
+	fi
+done
+
+if [ -z "${base}" ]; then
+	if [ "${1}" == 'hotfix' ]; then
+		base='hotfix'
+	else
+		base="$(get-repo-base-branch)"
+	fi
 fi
 
 if [ -z "${base}" ]; then
@@ -80,7 +94,10 @@ See title.
 - [ ] Documentation
 TEMPLATE_MD
 printf "%s\n" "${template}" > "${bodyfile}"
-nano "${bodyfile}"
+
+if [ "${B_QUIET}" = 'no' ]; then
+	nano "${bodyfile}"
+fi
 
 title="$(head -n 1 "${bodyfile}" | sed -e 's/"/\\"/g')"
 body="$(tail -n +2 "${bodyfile}" | sed -e '/./,$!d' | tr '\n' 'Ω' | sed -e 's/Ω/\\r\\n/g' | sed -e 's/"/\\"/g')"
@@ -121,7 +138,9 @@ echo -e "draft: ${I_CS}${draft}${N_CS}" >&2
 echo -e "title: ${I_CS}${title}${N_CS}" >&2
 echo -e "body:\n${I_CS}${body}\n${K_CS}EOF${N_CS}" >&2
 
-if ! prompt 'Look good?'; then exit 1; fi
+if [ "${B_QUIET}" = 'no' ]; then
+	if ! prompt 'Look good?'; then exit 1; fi
+fi
 
 if [ "${branch}" != "$(get-current-branch)" ]; then
 	checkout "${branch}"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set -e
-set -x
+# set -x
 
 usage() {
 	echo "Create a draft Pull Request from the staged changes." >&2
@@ -29,6 +29,29 @@ if ! has-staged-changes; then
 	fi
 fi
 
+ARGS=()
+COMMIT_MESSAGE=()
+
+while (( $# > 0 )); do
+	if [ "${1}" == '-b' ]; then
+		ARGS+=( "${1}" )
+		shift
+		ARGS+=( "${1}" )
+		shift
+	elif [ "${1}" == '-q' ]; then
+		ARGS+=( "${1}" )
+		shift
+	else
+		break
+	fi
+done
+
+while (( $# > 0 )); do
+	ARGS+=( "${1}" )
+	COMMIT_MESSAGE+=( "${1}" )
+	shift
+done
+
 checkout "tmp/$(date +%s)"
-git -c core.hooksPath=/dev/null commit -S -m "${*}" --no-verify
-createpr "${@}"
+git -c core.hooksPath=/dev/null commit -S -m "${COMMIT_MESSAGE[*]}" --no-verify
+createpr "${ARGS[@]}"
