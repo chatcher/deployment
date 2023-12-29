@@ -49,22 +49,22 @@ git_clone() {
 
 	cd "${name}" || usage "I guess cloning didn't work."
 
-	NVM_DIR="$HOME/.nvm"
-	if [ -f '.nvmrc' ] && [ -s "$NVM_DIR/nvm.sh" ]; then
-		# shellcheck disable=SC1090
-		source "$NVM_DIR/nvm.sh"  # This loads nvm
-		nvm i || :
-	fi
+	# NVM_DIR="$HOME/.nvm"
+	# if [ -f '.nvmrc' ] && [ -s "$NVM_DIR/nvm.sh" ]; then
+	# 	# shellcheck disable=SC1090
+	# 	source "$NVM_DIR/nvm.sh"  # This loads nvm
+	# 	nvm i || :
+	# fi
 
-	if [ -f 'yarn.lock' ]; then
-		yarn
-	elif [ -f 'package-lock.json' ]; then
-		npm i
-	else
-		echo "${S_CS} No lock file ${N_CS}" >&2
-	fi
+	# if [ -f 'yarn.lock' ]; then
+	# 	yarn
+	# elif [ -f 'package-lock.json' ]; then
+	# 	npm i
+	# else
+	# 	echo "${S_CS} No lock file ${N_CS}" >&2
+	# fi
 
-	open -a 'Sublime Text' . &
+	# open -a 'Sublime Text' . &
 }
 
 git_checkout() {
