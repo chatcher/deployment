@@ -27,30 +27,30 @@ read -r -d '' data <<JSON || :
         states: [OPEN]\
         last: 50\
       ) {\
-       nodes {\
-        number\
-        title\
-        updatedAt\
-        user: author { login }\
-        base: baseRefName\
-        head: headRefName\
-        mergeable: mergeable\
-        state: mergeStateStatus\
-        open: state\
-        link: permalink\
-        reviews(\
-          states: [\
-            PENDING\
-            APPROVED\
-            CHANGES_REQUESTED\
-          ]\
-          last: 50\
-        ) {\
-          nodes {\
-            user: author { login }\
-            state\
+        nodes {\
+          number\
+          title\
+          updatedAt\
+          user: author { login }\
+          base: baseRefName\
+          head: headRefName\
+          mergeable: mergeable\
+          state: mergeStateStatus\
+          open: state\
+          link: permalink\
+          reviews(\
+            states: [\
+              PENDING\
+              APPROVED\
+              CHANGES_REQUESTED\
+            ]\
+            last: 50\
+          ) {\
+            nodes {\
+              user: author { login }\
+              state\
+            }\
           }\
-        }\
         }\
       }\
     }\
