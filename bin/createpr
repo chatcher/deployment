@@ -119,7 +119,11 @@ if [ -z "${base}" ]; then usage "Could not determine base branch."; fi
 # fi
 
 if [ "${base}" = 'hotfix' ]; then
-	title="[hotfix] ${title}"
+	if [[ "${title}" =~ ^hotfix ]]; then
+		title="[hotfix]${title#hotfix}"
+	else
+		title="[hotfix] ${title}"
+	fi
 fi
 
 read -d '' -r data <<JSON || :
