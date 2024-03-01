@@ -57,11 +57,11 @@ gather_env_vars() {
 	if [ -z "${!db_pass}" ]; then usage "Picked up ${db_pass} for the pass, but it has no value.'"; fi
 	if [ -z "${!db_name}" ]; then usage "Picked up ${db_name} for the name, but it has no value.'"; fi
 
-	echo -e "${K_CS} Using ${db_host} = ${!db_host} ${N_CS}" >&2
-	echo -e "${K_CS} Using ${db_port} = ${!db_port} ${N_CS}" >&2
-	echo -e "${K_CS} Using ${db_user} = ${!db_user} ${N_CS}" >&2
-	echo -e "${K_CS} Using ${db_pass} = ${!db_pass} ${N_CS}" >&2
-	echo -e "${K_CS} Using ${db_name} = ${!db_name} ${N_CS}" >&2
+	# echo -e "${K_CS} Using ${db_host} = ${!db_host} ${N_CS}" >&2
+	# echo -e "${K_CS} Using ${db_port} = ${!db_port} ${N_CS}" >&2
+	# echo -e "${K_CS} Using ${db_user} = ${!db_user} ${N_CS}" >&2
+	# echo -e "${K_CS} Using ${db_pass} = ${!db_pass} ${N_CS}" >&2
+	# echo -e "${K_CS} Using ${db_name} = ${!db_name} ${N_CS}" >&2
 }
 
 usage() {
