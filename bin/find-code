@@ -8,7 +8,7 @@ usage() {
 	echo "Search all repositories for <query>" >&2
 	echo >&2
 	echo "usage:" >&2
-	echo "  $(basename "${0}") <query>" >&2
+	echo "  $(basename "${0}") [options] <query>" >&2
 	echo >&2
 	echo "options:" >&2
 	echo "  --ui    search only UI projects" >&2
@@ -87,6 +87,8 @@ if [ -z "${QUERY_STRING}" ]; then usage 'Search query required.'; fi
 
 tracker="$(mktemp)"
 trap 'rm -rf "${tracker}"' EXIT
+
+usage 'disabled because you moved the repos around'
 
 case "${REPO_TYPE}" in
   any)

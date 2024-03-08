@@ -52,6 +52,8 @@ if (( $# == 0 )); then
 	usage "At least one filter must be provided"
 fi
 
+usage 'disabled because you moved the repos around'
+
 REPO_DIR="${HOME}/repo"
 
 if [ ! -d "${REPO_DIR}" ]; then
