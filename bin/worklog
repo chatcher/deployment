@@ -22,7 +22,9 @@ cd "${storage}" || usage "No storage at ${storage}"
 
 entry="${*}"
 
-if [ -z "${entry}" ]; then
+if [[ "${1}" =~ -?-o(pen)? ]]; then
+	open .
+elif [ -z "${entry}" ]; then
 	for offset in {6..0}; do
 		stamp="$(date "-v-${offset}d" '+%Y-%m-%d')"
 		file="${stamp}.txt"
