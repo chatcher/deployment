@@ -91,9 +91,9 @@ if [ -d "${server_dir}/api" ]; then watch_dirs+=( '--watch' "${server_dir}/api" 
 if [ -d "${server_dir}/config" ]; then watch_dirs+=( '--watch' "${server_dir}/config" ); fi
 if [ -d 'common' ]; then watch_dirs+=( '--watch' 'common' ); fi
 
-test_path='src/api/**/*.test.js'
+test_path='src/**/*.test.js'
 if [ -d 'server/tests' ]; then test_path='server/tests'; fi
-if [ -f 'Jenkinsfile-Lambda.config' ]; then test_path='src/**/*.test.js'; fi
+# if [ -f 'Jenkinsfile-Lambda.config' ]; then test_path='src/**/*.test.js'; fi
 if [ "${npx}" == 'go' ]; then test_path='./...'; fi
 
 watch_dir="${server_dir}"
