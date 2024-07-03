@@ -11,12 +11,12 @@ usage() {
 	echo "  $(basename "${0}") [options] <query>" >&2
 	echo >&2
 	echo "options:" >&2
-	echo "  --ui    search only UI projects" >&2
-	echo "  --api   search only API projects" >&2
-	echo "  --any   look at any file type" >&2
-	echo "  --html  only look at html files" >&2
-	echo "  -p      specific a filepath pattern" >&2
-	echo "  -f      specific a filename pattern" >&2
+	echo "  --ui            search only UI projects" >&2
+	echo "  --api           search only API projects" >&2
+	echo "  --any           look at any file type" >&2
+	echo "  --html          only look at html files" >&2
+	echo "  -p <pattern>    specific a file path pattern" >&2
+	echo "  -f <pattern>    specific a file name pattern" >&2
 	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
@@ -88,8 +88,6 @@ if [ -z "${QUERY_STRING}" ]; then usage 'Search query required.'; fi
 tracker="$(mktemp)"
 trap 'rm -rf "${tracker}"' EXIT
 
-usage 'disabled because you moved the repos around'
-
 case "${REPO_TYPE}" in
   any)
 		find ~/repo -type f -regex "${FILE_REGEX}" -not -path '*/coverage/*' -not -path '*/node_modules/*' "${PATH_REGEX:+-path}" "${PATH_REGEX}" | xargs -I {} bash -c 'search "${@}"' -- {} "${QUERY_STRING}" "${tracker}"
@@ -107,7 +105,6 @@ case "${REPO_TYPE}" in
     usage
     ;;
 esac
-
 
 echo >&2
 echo -e "${S_CS} done ${N_CS}" >&2
