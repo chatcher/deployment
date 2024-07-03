@@ -12,6 +12,7 @@ usage() {
 	echo "options:" >&2
 	echo "  -b <branch>  Use <branch> as base branch instead of default." >&2
 	echo "  -q           Run quickly and quietly, don't prompt for confirmations." >&2
+	echo "  -qq          Same as -q but don't open the PR site.." >&2
 	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
@@ -26,6 +27,7 @@ if [ -z "${GITHUB_TOKEN}" ]; then
 fi
 
 B_QUIET='no'
+B_QUIETER='no'
 
 while (( $# > 0 )); do
 	if [ "${1}" == '-b' ]; then
@@ -35,6 +37,10 @@ while (( $# > 0 )); do
 	elif [ "${1}" == '-q' ]; then
 		shift
 		B_QUIET='yes'
+	elif [ "${1}" == '-qq' ]; then
+		shift
+		B_QUIET='yes'
+		B_QUIETER='yes'
 	else
 		break
 	fi
@@ -182,15 +188,17 @@ fi
 # curl -X PATCH -H "${auth_header}" -H "${accept_header}" "${github_url}" -d "${data}" -s
 
 
-echo -e "${S_CS}Self-assigning PR...${N_CS}" >&2
+echo -e "${S_CS} Self-assigning PR... ${N_CS}" >&2
 read -d '' -r data << JSON || :
 { "assignees": ["${user}"] }
 JSON
 curl -H "${auth_header}" "$(get-repo-api)/repos/$(get-repo-path)/issues/${prn}/assignees" -d "${data}"
 
-
-echo -e "${S_CS}Launching PR page...${N_CS}" >&2
 link="$(get-pull-request-link "${prn}")"
-open "${link}"
+echo -e "${I_CS} PR URL: ${L_CS}${link}${N_CS}" >&2
 
-echo -e "${L_CS}${link}${N_CS}" >&2
+
+if [ "${B_QUIETER}" = 'no' ]; then
+	echo -e "${S_CS} Launching PR page... ${N_CS}" >&2
+	open "${link}"
+fi

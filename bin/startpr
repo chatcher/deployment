@@ -41,6 +41,9 @@ while (( $# > 0 )); do
 	elif [ "${1}" == '-q' ]; then
 		ARGS+=( "${1}" )
 		shift
+	elif [ "${1}" == '-qq' ]; then
+		ARGS+=( "${1}" )
+		shift
 	else
 		break
 	fi
