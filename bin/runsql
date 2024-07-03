@@ -187,7 +187,7 @@ if [[ "${db_id}" =~ oracle ]]; then
 			DEFINE arg1 = ''
 			DEFINE arg2 = ''
 			DEFINE arg3 = ''
-			@${sql_file}
+			@"${sql_file}"
 		SQL
 
 	else
@@ -203,7 +203,7 @@ if [[ "${db_id}" =~ oracle ]]; then
 			DEFINE arg2 = ''
 			DEFINE arg3 = ''
 			${variables}
-			@${sql_file}
+			@"${sql_file}"
 		SQL
 
 
