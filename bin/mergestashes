@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set -e
-set -x
+# set -x
 
 squish_stash() {
 	if STASH_RESPONSE="$(git stash apply 2>&1)"; then
@@ -50,7 +50,8 @@ git stash -u
 git checkout -b "tmp/$(date +%s)"
 
 stashlimit="$(git stash list | wc -l | tr -d ' ')"
-echo -e "${I_CS} ${stashlimit} stashes to look at... ${N_CS}"
+s='es'; if [ "${stashlimit}" == '1' ]; then s=''; fi
+echo -e "${I_CS} ${stashlimit} stash${s} to look at... ${N_CS}"
 
 stashindex=0
 stashcount=0
