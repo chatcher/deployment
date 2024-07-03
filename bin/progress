@@ -11,7 +11,7 @@ denom="${2:-10}"
 
 width="$(( cols * numer / denom ))"
 prcnt="$(( 100 * numer / denom ))%"
-label="${3:-$prcnt}"
+label="${numer} / ${denom} (${3:-$prcnt})"
 
 #echo "numer: ${numer}"
 #echo "denom: ${denom}"
@@ -20,7 +20,7 @@ label="${3:-$prcnt}"
 
 #printf "$b%-$(( width ))s$b$$(( cols - width ))s" "${left}" "" "${right}" ""
 if (( width < half )); then
-	printf "${left}%-$(( width ))s${right}%$(( cols - width ))s${none}" "" "${label} "
+	printf "${left}%-$(( width ))s${right}%$(( cols - width ))s${none}" "" "${label} " >&2
 else
-	printf "${left}%-$(( width ))s${right}%$(( cols - width ))s${none}" " ${label}" ""
+	printf "${left}%-$(( width ))s${right}%$(( cols - width ))s${none}" " ${label}" "" >&2
 fi
