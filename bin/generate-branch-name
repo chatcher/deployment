@@ -15,14 +15,14 @@ if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
 branch="${*}"
 
-# lowercase
-branch="$(tr '[:upper:]' '[:lower:]' <<< "${branch}")"
+# turn some characters into underscores
+branch="$(tr -s '.-' '_' <<< "${branch}")"
 
-# hyphens to underscores
-branch="$(tr '-' '_' <<< "${branch}")"
+# turn spaces into hyphens
+branch="$(tr -s '[:blank:]' '-' <<< "${branch}")"
 
-# punctuation and symbols to hyphens
-branch="$(sed -E -e 's/[^a-z0-9_]+/-/g' -e 's/(^-|-$)//g' <<< "${branch}")"
+# remove non-alphanumeric/underscore/hyphen
+branch="$(tr -C -d '[:alnum:]_-' <<< "${branch}")"
 
-# done
-echo "${branch}" >&1
+# condense, trim, and lower case
+sed -E -e 's/--+/-/g' -e 's/(^[_-]|[_-]$)//g' <<< "${branch,,}"
