@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+set -e
+# set -x
+
+usage() {
+	echo "Play a sound!" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <sound>" >&2
+	echo >&2
+	echo "params:" >&2
+	echo "  sound    What sound to play" >&2
+	echo >&2
+	echo "sounds:" >&2
+	echo "  prompt   'BubbleAppear'" >&2
+	echo "  done     'BubbleDisappear'" >&2
+	echo "  alert    'Alert'" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+if [[ "${1}" =~ --?l(ist)? ]]; then
+	ls -l /System/Library/PrivateFrameworks/ScreenReader.framework/Versions/A/Resources/Sounds/ | grep aiff | sed -E -e 's/.* (.*).aiff/\1/'
+	exit
+fi
+
+if [ -z "${1}" ]; then
+	usage 'Sound name required'
+fi
+
+play_sound() {
+	if [ -f "/System/Library/PrivateFrameworks/ScreenReader.framework/Versions/A/Resources/Sounds/${1}.aiff" ]; then
+		afplay "/System/Library/PrivateFrameworks/ScreenReader.framework/Versions/A/Resources/Sounds/${1}.aiff"
+	else
+		usage "Unknown sound: '${1}'"
+	fi
+}
+
+main() {
+	if [ "${1}" == 'prompt' ]; then
+		play_sound BubbleAppear
+	elif [ "${1}" == 'done' ]; then
+		play_sound BubbleDisappear
+	elif [ "${1}" == 'alert' ]; then
+		play_sound Alert
+	else
+		play_sound "${1}"
+	fi
+}
+
+while (( $# >0 )); do
+	main "${1}"
+	shift
+done
