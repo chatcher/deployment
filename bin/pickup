@@ -17,7 +17,8 @@ usage() {
 
 try_merge() {
 	branch="${1}"
-	git merge --autostash --squash "origin/${branch}" >&2
+	git merge --squash "origin/${branch}" >&2
+	# git merge --autostash --squash "origin/${branch}" >&2
 	# git merge -m "Temp merge commit" "origin/${branch}" >&2
 }
 
@@ -32,7 +33,6 @@ if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 branch="${1}"
 
 if [ -z "${branch}" ]; then read -p 'Branch or Pull Request? ' -r branch; fi
-if [ -z "${branch}" ]; then usage "Branch or Pull Request Number required."; fi
 
 if [[ "${branch}" =~ ^[0-9]+$ ]]; then
 	pr_branch="$(get-pull-request "${branch}" | jq -r '.head' )"
@@ -42,10 +42,10 @@ fi
 
 if [ -z "${branch}" ]; then usage "Branch or Pull Request Number required."; fi
 
-echo -e "${I_CS} branch: ${branch} ${N_CS}" >&2
+echo -e "${I_CS} Branch: ${branch} ${N_CS}" >&2
 
-# sha="$(stash)"
-# trap 'unstash "${sha}"' EXIT
+sha="$(stash)"
+trap 'unstash "${sha}"' EXIT
 
 echo -e "${S_CS} Fetching remote branches... ${N_CS}" >&2
 git fetch >&2
