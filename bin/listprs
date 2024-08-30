@@ -21,6 +21,14 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
+while ! [ -d '.git' ] && [ "$(pwd)" != '/' ]; do
+	cd ..
+done
+
+if ! [ -d '.git' ]; then
+	usage 'No .git directory found in path; better luck next time.'
+fi
+
 while read -u 3 -r details; do
 	printpr "${@}" "${details}"
 done 3<<< "$(get-pull-request-list)"
