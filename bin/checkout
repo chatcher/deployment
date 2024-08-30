@@ -38,7 +38,9 @@ usage() {
 }
 
 git_clone() {
-	name="${1##*/}"
+	name="${1}"
+	name="${name##*/}" ## chop leading URI path
+	name="${name%%.git}" ## chop maybe trailing .git ext
 
 	if ! [ -d "${name}" ]; then
 		echo -e "${S_CS} Cloning ${name}... ${N_CS}" >&2
