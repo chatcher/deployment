@@ -161,7 +161,7 @@ elif [[ "${mode}" =~ debug ]]; then
 elif [[ "${mode}" =~ test ]]; then
 	if [ "${test_script}" = 'ng test' ]; then
 		preamble "[t1] Testing via ${npx} ng test watch=true"
-		$npx ng test --source-map=false --watch=true --code-coverage --source-map
+		$npx ng test --source-map=false --watch=true --code-coverage
 
 	elif [[ "${test_script}" =~ mocha ]]; then
 		if [ "${npx}" = 'yarn' ]
@@ -285,7 +285,7 @@ elif [[ "${mode}" =~ test ]]; then
 elif [[ "${mode}" =~ once ]]; then
 	if [ "${test_script}" = 'ng test' ]; then
 		preamble " [o1] Testing via ${npx} ng test watch=false"
-		$npx ng test --source-map=false --watch=false --code-coverage --source-map
+		$npx ng test --source-map=false --watch=false --code-coverage
 
 	elif [[ "${test_script}" =~ mocha ]]; then
 		preamble " [o2] Testing via ${npx} ${nyc} mocha watch=false"
@@ -329,7 +329,7 @@ elif [[ "${mode}" =~ cover ]]; then
 
 	if [ "${test_script}" = 'ng test' ]; then
 		preamble "[c1] Testing via ${npx} ng test watch=false"
-		$npx ng test --source-map=false --watch=false --code-coverage --source-map
+		$npx ng test --source-map=false --watch=false --code-coverage
 
 	elif [[ "${test_script}" =~ mocha ]]; then
 		preamble "[c2] Testing via ${npx} ${nyc} mocha watch=false"
@@ -409,7 +409,7 @@ elif [[ "${mode}" =~ check ]]; then
 
 	echo -e "${S_CS} test ${N_CS}" >&2
 	if [ "${test_script}" = 'ng test' ]; then
-		echo -e "\t" $npx ng test --source-map=false --watch=true --code-coverage --source-map
+		echo -e "\t" $npx ng test --source-map=false --watch=true --code-coverage
 
 	elif [[ "${test_script}" =~ mocha ]]; then
 		if [ -z "${nyc}" ]; then
@@ -434,7 +434,7 @@ elif [[ "${mode}" =~ check ]]; then
 
 	echo -e "${S_CS} cover ${N_CS}" >&2
 	if [ "${test_script}" = 'ng test' ]; then
-		echo -e "\t" $npx ng test --source-map=false --watch=false --code-coverage --source-map
+		echo -e "\t" $npx ng test --source-map=false --watch=false --code-coverage
 	elif [[ "${test_script}" =~ mocha ]]; then
 		if [ "${nyc}" = 'nyc' ]; then
 			$npx "${nyc}" --reporter=lcov mocha "${test_path}" --exit
