@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+
+# set -e
+# set -x
+
+usage() {
+	echo "Description" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") [-x] <arguments>" >&2
+	echo >&2
+	echo "options:" >&2
+	echo "  -x    Some unknown option" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+echo -e ''
+MY_VAR='null substitution'
+echo -e "${S_CS}"'${MY_VAR:-sub}'"${N_CS} (${MY_VAR})"
+echo -e '  "${MY_VAR}"'"       ${K_CS}->${N_CS} '${MY_VAR}'"
+echo -e '  "${MY_VAR:-sub}"'"  ${K_CS}->${N_CS} '${MY_VAR:-sub}'"
+MY_VAR=''
+echo -e '  "${MY_VAR}"'"       ${K_CS}->${N_CS} '${MY_VAR}'"
+echo -e '  "${MY_VAR:-sub}"'"  ${K_CS}->${N_CS} '${MY_VAR:-sub}'"
+
+echo -e ''
+MY_VAR='not-null substitution'
+echo -e "${S_CS}"'${MY_VAR:+sub}'"${N_CS} (${MY_VAR})"
+echo -e '  "${MY_VAR}"'"       ${K_CS}->${N_CS} '${MY_VAR}'"
+echo -e '  "${MY_VAR:+sub}"'"  ${K_CS}->${N_CS} '${MY_VAR:+sub}'"
+MY_VAR=''
+echo -e '  "${MY_VAR}"'"       ${K_CS}->${N_CS} '${MY_VAR}'"
+echo -e '  "${MY_VAR:+sub}"'"  ${K_CS}->${N_CS} '${MY_VAR:+sub}'"
+
+echo -e ''
+MY_VAR='set default'
+echo -e "${S_CS}"'${MY_VAR:=msg}'"${N_CS} (${MY_VAR})"
+echo -e '  "${MY_VAR}"'"       ${K_CS}->${N_CS} '${MY_VAR}'"
+echo -e '  "${MY_VAR:=msg}"'"  ${K_CS}->${N_CS} '${MY_VAR:=msg}'"
+echo -e '  "${MY_VAR}"'"       ${K_CS}->${N_CS} '${MY_VAR}'"
+echo -e
+MY_VAR=''
+echo -e '  "${MY_VAR}"'"       ${K_CS}->${N_CS} '${MY_VAR}'"
+echo -e '  "${MY_VAR:=msg}"'"  ${K_CS}->${N_CS} '${MY_VAR:=msg}'"
+echo -e '  "${MY_VAR}"'"       ${K_CS}->${N_CS} '${MY_VAR}'"
+
+echo -e ''
+MY_VAR='throw on null'
+echo -e "${S_CS}"'${MY_VAR:?msg}'"${N_CS} (${MY_VAR})"
+echo -e '  "${MY_VAR}"'"       ${K_CS}->${N_CS} '${MY_VAR}'"
+echo -e '  "${MY_VAR:?msg}"'"  ${K_CS}->${N_CS} '${MY_VAR:?msg}'"
+MY_VAR=''
+echo -e '  "${MY_VAR}"'"       ${K_CS}->${N_CS} '${MY_VAR}'"
+echo -e '  "${MY_VAR:?msg}"'"  ${K_CS}->${N_CS}"
+(echo -e "${MY_VAR:?msg}") || :
+
+echo -e ''
+MY_VAR='substring'
+echo -e "${S_CS}"'${MY_VAR:offset}'"${N_CS}, ${S_CS}"'${MY_VAR:offset:length}' "${N_CS} (${MY_VAR})"
+echo -e '  "${MY_VAR}"'"     ${K_CS}->${N_CS} '${MY_VAR}'"
+echo -e '  "${MY_VAR:3}"'"   ${K_CS}->${N_CS} '${MY_VAR:3}'"
+echo -e '  "${MY_VAR:3:3}"'" ${K_CS}->${N_CS} '${MY_VAR:3:3}'"
+
+echo -e ''
+MY_VAR='length'
+echo -e "${S_CS}"'${MY_VAR:offset}'"${N_CS} (${MY_VAR})"
+echo -e '  "${MY_VAR}"'"  ${K_CS}->${N_CS} '${MY_VAR}'"
+echo -e '  "${#MY_VAR}"'" ${K_CS}->${N_CS} '${#MY_VAR}'"
+
+echo -e ''
+MY_VAR='remove prefix'
+echo -e "${S_CS}"'${MY_VAR:offset}'"${N_CS} (${MY_VAR})"
+echo -e '  "${MY_VAR}"'"  ${K_CS}->${N_CS} '${MY_VAR}'"
+echo -e '  "${MY_VAR#*e}"'" ${K_CS}->${N_CS} '${MY_VAR#*e}' (lazy)"
+echo -e '  "${MY_VAR##*e}"'" ${K_CS}->${N_CS} '${MY_VAR##*e}' (greedy)"
+
+echo -e ''
+MY_VAR='remove suffix'
+echo -e "${S_CS}"'${MY_VAR:offset}'"${N_CS} (${MY_VAR})"
+echo -e '  "${MY_VAR}"'"  ${K_CS}->${N_CS} '${MY_VAR}'"
+echo -e '  "${MY_VAR%e*}"'" ${K_CS}->${N_CS} '${MY_VAR%e*}' (lazy)"
+echo -e '  "${MY_VAR%%e*}"'" ${K_CS}->${N_CS} '${MY_VAR%%e*}' (greedy)"
+
+echo -e ''
+MY_VAR='regex replace'
+echo -e "${S_CS}"'${MY_VAR:offset}'"${N_CS} (${MY_VAR})"
+echo -e '  "${MY_VAR}"'"  ${K_CS}->${N_CS} '${MY_VAR}'"
+echo -e '  "${MY_VAR/re/first}"'" ${K_CS}->${N_CS} '${MY_VAR/re/first}'"
+echo -e '  "${MY_VAR//re/all}"'" ${K_CS}->${N_CS} '${MY_VAR//re/all}'"
+echo -e '  "${MY_VAR/#reg/left-anchor}"'" ${K_CS}->${N_CS} '${MY_VAR/#reg/left-anchor}' (start)"
+echo -e '  "${MY_VAR/%ace/right-anchor}"'" ${K_CS}->${N_CS} '${MY_VAR/%ace/right-anchor}' (end)"
+
+echo -e ''
+MY_VAR='upper-case'
+echo -e "${S_CS}"'${MY_VAR^^}'"${N_CS} (${MY_VAR,,})"
+echo -e '  "${MY_VAR}"'"   ${K_CS}->${N_CS} '${MY_VAR}'"
+echo -e '  "${MY_VAR^}"'"  ${K_CS}->${N_CS} '${MY_VAR^}'"
+echo -e '  "${MY_VAR^^}"'" ${K_CS}->${N_CS} '${MY_VAR^^}'"
+
+echo -e ''
+MY_VAR='LOWER-CASE'
+echo -e "${S_CS}"'${MY_VAR,,}'"${N_CS} (${MY_VAR,,})"
+echo -e '  "${MY_VAR}"'"   ${K_CS}->${N_CS} '${MY_VAR}'"
+echo -e '  "${MY_VAR,}"'"  ${K_CS}->${N_CS} '${MY_VAR,}'"
+echo -e '  "${MY_VAR,,}"'" ${K_CS}->${N_CS} '${MY_VAR,,}'"
