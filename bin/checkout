@@ -3,6 +3,18 @@
 # set -e
 # set -x
 
+usage() {
+	echo "Checkout the specified Branch or Pull Request" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <branch|prn>" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
 delete_branch_like_a_jerk() {
 	branch="${1}"
 	if prompt "Are you sure you want to delete ${branch}?"; then
@@ -23,18 +35,6 @@ delete_branch() {
 	else
 		echo -e "${S_CS} No old branch to delete (probably a detached head) ${N_CS}" >&2
 	fi
-}
-
-usage() {
-	echo "Checkout the specified Branch or Pull Request" >&2
-	echo >&2
-	echo "usage:" >&2
-	echo "  $(basename "${0}") <branch|prn>" >&2
-	echo >&2
-
-	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
-
-	exit 1
 }
 
 git_clone() {
