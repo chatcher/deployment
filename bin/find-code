@@ -1,22 +1,31 @@
 #!/usr/bin/env bash
 
 set -e
-set -x
+# set -x
+
+CACHE_DIR='/tmp/find-code'
+MIN_DEPTH=2
+MAX_DEPTH=16
+TEAM_NAME='team_viper'
+PATH_REGEX='/'
+FILE_REGEX='\.[jt]s'
+QUERY=''
 
 usage() {
 	set +x
-	echo "Search all repositories for <query>" >&2
+	echo "Search repositories for <query>" >&2
 	echo >&2
 	echo "usage:" >&2
 	echo "  $(basename "${0}") [options] <query>" >&2
+	echo "  $(basename "${0}") --reset" >&2
 	echo >&2
 	echo "options:" >&2
-	echo "  --ui            search only UI projects" >&2
-	echo "  --api           search only API projects" >&2
-	echo "  --any           look at any file type" >&2
-	echo "  --html          only look at html files" >&2
-	echo "  -p <pattern>    specific a file path pattern" >&2
-	echo "  -f <pattern>    specific a file name pattern" >&2
+	echo "  -d <min> <max>       set file depth range - default: ${MIN_DEPTH} ${MAX_DEPTH}" >&2
+	echo "  -t <team name>       look within a specific team folder - default: ${TEAM_NAME}" >&2
+	echo "  -p <path pattern>    apply a specific path name pattern - default: ${PATH_REGEX}" >&2
+	echo "  -f <file pattern>    apply a specific file name pattern - default: ${FILE_REGEX}" >&2
+	echo "  --reset              clear out all cached data" >&2
+	# echo "  -r                   ignored cached results" >&2
 	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
@@ -25,87 +34,128 @@ usage() {
 }
 
 search() {
-	filename="${1}"
-	query="${2}"
-	tracker="${3}"
-	timestamp=0
-	if [ -n "${tracker}" ] && [ -f "${tracker}" ]; then
-		timestamp="$(cat "${tracker}")"
-	fi
+	FILENAME="${1}"
+	QUERY="${2}"
 
 	if [ -f "${1}" ]; then
-		discovery="$(grep "${query}" "${filename}" | sed -E -e 's/^ +//' -e "s/(${query})/"$'\033'"[33m\1"$'\033'"[m/")"
-		nowish="$(date +%s )"
-
-		if [ -n "${discovery}" ]; then
-			echo >&2
-			echo -e "${I_CS} ${filename} ${N_CS}" >&2
-			echo "${discovery}" >&2
-			if [ -n "${tracker}" ] && [ -f "${tracker}" ]; then
-				echo "$((nowish + 1))" > "${tracker}"
-			fi
-		elif (( timestamp < nowish )); then
-			echo -n '.' >&2
-			if [ -n "${tracker}" ] && [ -f "${tracker}" ]; then
-				echo "$((nowish + 1))" > "${tracker}"
-			fi
+		DISCOVERY="$(grep -E -i "${QUERY}" "${FILENAME}" | sed -E -e 's/^ +//' -e "s/(${QUERY})/"$'\033'"[33m\1"$'\033'"[m/gi")"
+		if [ -n "${DISCOVERY}" ]; then
+			echo
+			echo -e "${I_CS} ${FILENAME} ${N_CS}"
+			echo "${DISCOVERY}"
 		fi
 	fi
 }
-export -f search
-
-FILE_REGEX='.*\.[jt]s'
-PATH_REGEX=''
-REPO_TYPE='any'
-QUERY_STRING=''
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
 while (( $# > 0 )); do
-	if [ "${1}" = '--any' ]; then
-		FILE_REGEX='.*'
-	elif [ "${1}" = '--html' ]; then
-		FILE_REGEX='.*\.html'
-	elif [[ "${1}" =~ -f ]]; then
-		FILE_REGEX=".*/${2}.*"
+	if [ "${1}" == -d ]; then
+		if ! [[ "${2}" =~ ^[0-9]+$ ]] || ! [[ "${3}" =~ ^[0-9]+$ ]]; then
+			usage "Depth range requires two numbers, but i see '${2}' '${3}'"
+		fi
+		MIN_DEPTH="${2}"
+		MAX_DEPTH="${3}"
+		shift 2
+	elif [ "${1}" == -t ]; then
+		TEAM_NAME="${2}"
 		shift
-	elif [[ "${1}" =~ -p ]]; then
-		PATH_REGEX="*/${2}/*"
+	elif [ "${1}" == -f ]; then
+		FILE_REGEX="${2}"
 		shift
-	elif [ "${1}" = '--ui' ]; then
-		REPO_TYPE='ui'
-	elif [ "${1}" = '--api' ]; then
-		REPO_TYPE='api'
+	elif [ "${1}" == -p ]; then
+		PATH_REGEX="${2}"
+		shift
+	elif [ "${1}" == --reset ]; then
+		echo -e "${S_CS} Clearing cache directory ${N_CS}" >&2
+		rm -r "${CACHE_DIR}"
+		exit
 	else
-		QUERY_STRING="${QUERY_STRING}${QUERY_STRING:+ }${1}"
+		QUERY="${QUERY}${QUERY:+ }${1}"
 	fi
 
 	shift
 done
 
-if [ -z "${QUERY_STRING}" ]; then usage 'Search query required.'; fi
+if [ -z "${QUERY}" ]; then usage 'Search query required.'; fi
 
-tracker="$(mktemp)"
-trap 'rm -rf "${tracker}"' EXIT
+REFERENCE="${MIN_DEPTH}-${MAX_DEPTH}:${TEAM_NAME}:${PATH_REGEX}:${FILE_REGEX}"
+SEARCH_TOKEN="$(md5 <<< "${REFERENCE}")"
+SEARCH_FILE="${CACHE_DIR}/${SEARCH_TOKEN}/files"
+RESULT_TOKEN="$(md5 <<< "${QUERY}")"
+RESULT_FILE="${CACHE_DIR}/${SEARCH_TOKEN}/${RESULT_TOKEN}"
 
-case "${REPO_TYPE}" in
-  any)
-		find ~/repo -type f -regex "${FILE_REGEX}" -not -path '*/coverage/*' -not -path '*/node_modules/*' "${PATH_REGEX:+-path}" "${PATH_REGEX}" | xargs -I {} bash -c 'search "${@}"' -- {} "${QUERY_STRING}" "${tracker}"
-    ;;
+mkdir -p "${CACHE_DIR}/${SEARCH_TOKEN}"
 
-  ui)
-		find ~/repo/*_ui -type f -regex "${FILE_REGEX}" -not -path '*/coverage/*' -not -path '*/node_modules/*' "${PATH_REGEX:+-path}" "${PATH_REGEX}" | xargs -I {} bash -c 'search "${@}"' -- {} "${QUERY_STRING}" "${tracker}"
-    ;;
+echo -e "${I_CS} REFERENCE: ${REFERENCE} ${N_CS}" >&2
+echo -e "${I_CS} SEARCH_TOKEN: ${SEARCH_TOKEN} ${N_CS}" >&2
+echo -e "${I_CS} SEARCH_FILE: ${SEARCH_FILE} ${N_CS}" >&2
+echo -e "${I_CS} RESULT_TOKEN: ${RESULT_TOKEN} ${N_CS}" >&2
+echo -e "${I_CS} RESULT_FILE: ${RESULT_FILE} ${N_CS}" >&2
+echo -e "${I_CS} FILE PATTERN: ${HOME}/repo/${TEAM_NAME}/.*${PATH_REGEX}.*/.*${FILE_REGEX} ${N_CS}" >&2
+echo -e "${I_CS} TEXT PATTERN: ${QUERY} ${N_CS}" >&2
 
-  api)
-		find ~/repo/*_api -type f -regex "${FILE_REGEX}" -not -path '*/coverage/*' -not -path '*/node_modules/*' "${PATH_REGEX:+-path}" "${PATH_REGEX}" | xargs -I {} bash -c 'search "${@}"' -- {} "${QUERY_STRING}" "${tracker}"
-    ;;
+if [ -f "${SEARCH_FILE}" ] && (( $(date +%s) - $(stat -f '%m' "${SEARCH_FILE}") > 3600 )); then
+	echo -e "${S_CS} Clearing stale cache ${N_CS}" >&2
+	rm -f "${SEARCH_FILE}"
+	rm -f "${RESULT_FILE}"
+fi
 
-  *)
-    usage
-    ;;
-esac
+if [ -f "${SEARCH_FILE}" ] && [ "$(wc -l < "${SEARCH_FILE}" | sed 's/ //g')" == '0' ]; then
+	echo -e "${S_CS} Clearing empty cache ${N_CS}" >&2
+	rm -f "${SEARCH_FILE}"
+	rm -f "${RESULT_FILE}"
+fi
+
+if [ -f "${RESULT_FILE}" ] &&  (( $(date +%s) - $(stat -f '%m' "${RESULT_FILE}") > 3600 )); then
+	echo -e "${S_CS} Cleared cached results ${N_CS}" >&2
+	rm "${RESULT_FILE}"
+fi
+
+if [ -e "${SEARCH_FILE}" ]; then
+	echo -e "${S_CS} Using cached search ${N_CS}" >&2
+else
+	echo -e "${S_CS} Gathering files... ${N_CS}" >&2
+	time find -L -Ex "${HOME}/repo/${TEAM_NAME}" -type f -mindepth "${MIN_DEPTH}" -maxdepth "${MAX_DEPTH}" | grep -Ev -e '/\.|node_modules|coverage' | grep -E -e ".*${PATH_REGEX}.*/.*${FILE_REGEX}$" | sort > "${SEARCH_FILE}"
+	echo -e "${S_CS} Okay, that was fun ${N_CS}" >&2
+fi
+
+TOTAL="$(wc -l < "${SEARCH_FILE}" | sed 's/ //g')"
+
+if [ "${TOTAL}" == '0' ]; then
+	echo -e "${S_CS} No files I guess? ${N_CS}" >&2
+	echo find -L -Ex "${HOME}/repo/${TEAM_NAME}" -type f -mindepth "${MIN_DEPTH}" -maxdepth "${MAX_DEPTH}" \| grep -Ev -e '/\.|node_modules|coverage' \| grep -E -e ".*${PATH_REGEX}.*/.*${FILE_REGEX}$"
+	exit 1
+fi
+
+if [ -e "${RESULT_FILE}" ]; then
+	echo -e "${S_CS} Displaying cached results ${N_CS}" >&2
+	cat "${RESULT_FILE}"
+else
+	echo -e "${S_CS} Searching ${TOTAL} files... ${N_CS}" >&2
+	touch "${RESULT_FILE}"
+	time (
+		TIMESTAMP=0
+		NOWISH=0
+		INDEX=0
+		while read -u 3 -r FILENAME; do
+			INDEX="$(( INDEX + 1 ))"
+
+			search "${FILENAME}" "${QUERY}" | tee -a "${RESULT_FILE}"
+
+			if ! (( INDEX % 100 )); then
+				NOWISH="$(date +%s )"
+			fi
+
+			if (( TIMESTAMP < NOWISH )); then
+				progress "${INDEX}" "${TOTAL}"
+				TIMESTAMP="$((NOWISH + 1))"
+			fi
+		done 3< "${SEARCH_FILE}"
+		progress "${INDEX}" "${TOTAL}"
+	)
+fi
 
 echo >&2
-echo -e "${S_CS} done ${N_CS}" >&2
+echo -e "${S_CS} Done ${N_CS}" >&2
 
