@@ -6,7 +6,7 @@ if [ -e "/usr/bin/subl" ]; then
 fi
 
 set -e
-set -x
+# set -x
 
 usage() {
 	echo "Open one or more files in Sublime Text" >&2
