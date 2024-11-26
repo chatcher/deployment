@@ -25,10 +25,6 @@ if ! [ -d .git ]; then
 	usage 'Gotta be in a git repository'
 fi
 
-is-yarn() ({
-	[ -f "${YARN_LOCK_FILE}" ]
-})
-
 downgrade-lockfile() ({
 	is-yarn && (( NPM_VERSION >= 9 ))
 })

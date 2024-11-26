@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+set -e
+
+YARN_LOCK_FILE='./yarn.lock'
+
+usage() {
+	echo "Resolve success if we see a yarn lock file, otherwise resolve failure." >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}")" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+[ -f "${YARN_LOCK_FILE}" ]
