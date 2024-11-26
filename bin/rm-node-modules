@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+set -e
+set -x
+
+usage() {
+	echo "Move node_modules aside, and then delete it in the background." >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}")" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+TIMESTAMP="$(date +%Y%m%d%H%M%S)"
+NODE_MODULES='node_modules'
+MOVED_NAME="${HOME}/${NODE_MODULES}.rm.${TIMESTAMP}"
+
+if [ -d "./${NODE_MODULES}" ]; then
+	mv "./${NODE_MODULES}" "${MOVED_NAME}"
+	rm -rf "${MOVED_NAME}" &
+else
+	usage "No directory: ${NODE_MODULES}"
+fi
