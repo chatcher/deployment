@@ -141,7 +141,9 @@ if [[ "${db_id}" =~ oracle ]]; then
 		SET LONG 2000;
 		ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD HH:MI:SS PM';
 		DESCRIBE ${schema}.${table};
+
 		SELECT COUNT(*) FROM ${schema}.${table};
+
 		SELECT
 			ALL_IND_COLUMNS.INDEX_NAME AS INDEX_NAME,
 			ALL_IND_COLUMNS.COLUMN_NAME AS COLUMN_NAME
@@ -149,6 +151,24 @@ if [[ "${db_id}" =~ oracle ]]; then
 		WHERE ALL_IND_COLUMNS.TABLE_OWNER = '${schema}'
 			AND ALL_IND_COLUMNS.TABLE_NAME = '${table}'
 		ORDER BY 1, 2;
+
+    SELECT
+			ALL_CONSTRAINTS.CONSTRAINT_NAME,
+			ALL_IND_COLUMNS.TABLE_OWNER,
+			ALL_IND_COLUMNS.TABLE_NAME,
+			ALL_IND_COLUMNS.COLUMN_NAME
+		FROM ALL_CONSTRAINTS
+		JOIN ALL_IND_COLUMNS
+			ON ALL_IND_COLUMNS.INDEX_NAME = ALL_CONSTRAINTS.R_CONSTRAINT_NAME
+    WHERE ALL_CONSTRAINTS.CONSTRAINT_TYPE = 'R'
+      AND ALL_constraints.OWNER = '${schema}'
+      AND ALL_constraints.TABLE_NAME = '${table}'
+		ORDER BY
+		  ALL_CONSTRAINTS.CONSTRAINT_NAME,
+		  ALL_IND_COLUMNS.TABLE_OWNER,
+		  ALL_IND_COLUMNS.TABLE_NAME,
+		  ALL_IND_COLUMNS.COLUMN_NAME
+		;
 	"
 
 	$oracle -S -L "${login}" <<< "$query" | tee -a "${filename}"
@@ -166,8 +186,8 @@ elif [[ "${db_id}" =~ aurora ]] || [[ "${db_id}" =~ local ]]; then
 		FROM INFORMATION_SCHEMA.TABLES
 		WHERE TABLE_SCHEMA='${schema}'
 		  AND TABLE_NAME='${table}';
+		SHOW CREATE TABLE ${schema}.${table};
 	"
-		# SHOW CREATE TABLE ${schema}.${table};
 
 	mysql -A --table \
 		'--connect-expired-password' \
