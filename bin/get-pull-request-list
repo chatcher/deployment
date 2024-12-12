@@ -42,6 +42,7 @@ read -r -d '' data <<JSON || :
           user: author { login }\
           base: baseRefName\
           head: headRefName\
+          draft: isDraft\
           mergeable: mergeable\
           state: mergeStateStatus\
           open: state\
@@ -69,7 +70,7 @@ JSON
 AUTH_HEADER="Authorization: bearer ${GITHUB_TOKEN}"
 ACCEPT_HEADER="Accept: application/vnd.github.merge-info-preview+json"
 PR_NODE_PATH=".data.repository.pullRequests.nodes"
-JSON_STRUCTURE="{number,title,date:.updatedAt,user:.user.login,base,head,open,mergeable,state,link,reviews:[.reviews.nodes|.[]|{user:.user.login,state}]}"
+JSON_STRUCTURE="{number,title,date:.updatedAt,user:.user.login,base,head,open,draft,mergeable,state,link,reviews:[.reviews.nodes|.[]|{user:.user.login,state}]}"
 
 response="$(curl -H "${AUTH_HEADER}" -H "${ACCEPT_HEADER}" -d "${data}" "$(get-repo-graphql)" -s)"
 message="$(jq -r '.message' <<< "${response}")"

@@ -9,8 +9,9 @@ usage() {
 	echo "  $(basename "${0}") [-x] <arguments>" >&2
 	echo >&2
 	echo "options:" >&2
-	echo "  -b       Include the PR body." >&2
+	echo "  -b    Include the PR body." >&2
 	echo "  -r    Include the PR reviews." >&2
+	echo "  -1    List the PR in one line." >&2
 	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
@@ -22,6 +23,7 @@ if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
 show_body=false
 show_reviews=false
+one_line=false
 while [[ "${1}" =~ ^- ]]; do
 	if [[ "${1}" =~ b ]]; then
 		show_body=true
@@ -29,6 +31,10 @@ while [[ "${1}" =~ ^- ]]; do
 
 	if [[ "${1}" =~ r ]]; then
 		show_reviews=true
+	fi
+
+	if [[ "${1}" = '-1' ]]; then
+		one_line=true
 	fi
 
 	shift
@@ -43,6 +49,7 @@ fi
 pr_number="$(jq -r '.number' <<< "${details}")"
 pr_user="$(jq -r '.user' <<< "${details}")"
 pr_open="$(jq -r '.open' <<< "${details}" | tr '[:upper:]' '[:lower:]')"
+pr_draft="$(jq -r '.draft' <<< "${details}" | tr '[:upper:]' '[:lower:]')"
 pr_mergeable="$(jq -r '.mergeable' <<< "${details}" | tr '[:upper:]' '[:lower:]')"
 pr_state="$(jq -r '.state' <<< "${details}" | tr '[:upper:]' '[:lower:]')"
 pr_date="$(jq -r '.date' <<< "${details}")"
@@ -54,7 +61,9 @@ pr_link="$(jq -r '.link' <<< "${details}")"
 
 open_color="${E_CS}"
 state_color="${E_CS}"
+if [ "${pr_draft}" == 'true' ]; then pr_open='draft'; fi
 if [ "${pr_open}" == 'open' ]; then open_color="${S_CS}"; fi
+if [ "${pr_open}" == 'draft' ]; then open_color="${I_CS}"; fi
 if [ "${pr_state}" == 'mergeable' ]; then state_color="${S_CS}"; fi
 
 
@@ -84,11 +93,15 @@ fi
 
 pr_age="(updated ${ageCount} ${ageUnits} ago)"
 
-echo >&2
-echo -e "${D_CS}#${pr_number} ${I_CS}${pr_user} ${K_CS}- ${open_color}${pr_open} ${state_color}${pr_state}, ${pr_mergeable} ${K_CS}${pr_age}${N_CS}" >&2
-echo -e "${K_CS}${pr_base} <- ${W_CS}${pr_head}${N_CS}" >&2
-echo -e "${N_CS}${pr_title}${N_CS}" >&2
-echo -e "${L_CS}${pr_link}${N_CS}" >&2
+if [ "${one_line}" = 'true' ]; then
+	echo -e "${pr_user} ${pr_open} ${pr_link} ${pr_title}" >&1
+else
+	echo >&2
+	echo -e "${D_CS}#${pr_number} ${I_CS}${pr_user} ${K_CS}- ${open_color}${pr_open} ${state_color}${pr_state}, ${pr_mergeable} ${K_CS}${pr_age}${N_CS}" >&2
+	echo -e "${K_CS}${pr_base} <- ${W_CS}${pr_head}${N_CS}" >&2
+	echo -e "${N_CS}${pr_title}${N_CS}" >&2
+	echo -e "${L_CS}${pr_link}${N_CS}" >&2
+fi
 
 if [ "${show_body}" = true ]; then
 	pr_body="$(jq -r '.body' <<< "${details}" | sed -e 's/\\r\\n/Ω/g' | tr 'Ω' '\n')"
