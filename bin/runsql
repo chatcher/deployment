@@ -3,6 +3,26 @@
 set -e
 # set -x
 
+usage() {
+	echo "For the specified DB, run the specified SQL query" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") <db_id> <sql_file> [<key>=<value>, ...]" >&2
+	echo >&2
+	echo "parameters:" >&2
+	echo "  db_id" >&2
+	echo "        The name of the database to run the query against. E.g. 'oracle'" >&2
+	echo "  sql_file" >&2
+	echo "        The filename of the query to run." >&2
+	echo "  key=value" >&2
+	echo "        Arbitrary key-value data to provide to the query, such as IDs." >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
 gather_env_vars() {
 	source ~/.env
 
@@ -13,7 +33,8 @@ gather_env_vars() {
 			var="${line%=*}"
 			val="${line#*=}"
 
-			if [[ "${var}" =~ HOST ]] && [[ "${val}" =~ $db_id ]]; then
+			# if [[ "${var}" =~ HOST ]] && [[ "${val}" =~ $db_id ]]; then
+			if [[ "${var}" =~ HOST ]] && [[ "${var}" =~ $re ]]; then
 				# echo -e "${D_CS} '${var}' = '${val}' ${N_CS}" >&2
 
 				# Found what looks like a database host
@@ -62,26 +83,6 @@ gather_env_vars() {
 	# echo -e "${K_CS} Using ${db_user} = ${!db_user} ${N_CS}" >&2
 	# echo -e "${K_CS} Using ${db_pass} = ${!db_pass} ${N_CS}" >&2
 	# echo -e "${K_CS} Using ${db_name} = ${!db_name} ${N_CS}" >&2
-}
-
-usage() {
-	echo "For the specified DB, run the specified SQL query" >&2
-	echo >&2
-	echo "usage:" >&2
-	echo "  $(basename "${0}") <db_id> <sql_file> [<key>=<value>, ...]" >&2
-	echo >&2
-	echo "parameters:" >&2
-	echo "  db_id" >&2
-	echo "        The name of the database to run the query against. E.g. 'oracle'" >&2
-	echo "  sql_file" >&2
-	echo "        The filename of the query to run." >&2
-	echo "  key=value" >&2
-	echo "        Arbitrary key-value data to provide to the query, such as IDs." >&2
-	echo >&2
-
-	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
-
-	exit 1
 }
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
