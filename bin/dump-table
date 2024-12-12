@@ -97,6 +97,10 @@ schema="${2}"
 table="${3}"
 columns="${4:-*}"
 
+if ! [[ "${db_id}" =~ - ]]; then
+	db_id="${db_id}-test"
+fi
+
 if [[ "${2}" =~ \. ]]; then
 	schema="${2%.*}"
 	table="${2#*.}"

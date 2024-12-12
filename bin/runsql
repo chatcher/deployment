@@ -92,6 +92,10 @@ if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 db_id="${1}"; shift || :
 sql_file="${1}"; shift || :
 
+if ! [[ "${db_id}" =~ - ]]; then
+	db_id="${db_id}-test"
+fi
+
 cd "$(dirname "${BASH_SOURCE[0]}")/sql"
 
 # echo "${sql_file}"

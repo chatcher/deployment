@@ -84,6 +84,10 @@ db_id="${1}"
 schema="${2}"
 table="${3}"
 
+if ! [[ "${db_id}" =~ - ]]; then
+	db_id="${db_id}-test"
+fi
+
 if [ -z "${3}" ]; then
 	# schema and table were (presumably) provided in dotted format
 	schema="${2%.*}"
