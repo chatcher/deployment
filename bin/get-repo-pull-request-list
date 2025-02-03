@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+
+set -e
+
+usage() {
+  echo "Fetch the list of Pull Requests for the current repo." >&2
+  echo >&2
+  echo "usage:" >&2
+  echo "  $(basename "${0}")" >&2
+  echo >&2
+
+  if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+  exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+PR_NODE_PATH=".data.repository.pullRequests.nodes"
+
+read -r -d '' JSON_STRUCTURE <<JSON || :
+{
+  owner: .repository.owner.login,
+  repo: .repository.name,
+  number,
+  title,
+  date: .updatedAt,
+  user: .user.login,
+  assignees: [.assignees.nodes|.[]|.login],
+  base,
+  head,
+  open,
+  draft,
+  state,
+  link,
+  reviews: [
+    .reviews.nodes |
+    .[] |
+    {
+      user: .user.login,
+      state
+    }
+  ],
+  checks: [
+    [
+      {
+        name: .commits.nodes[0].commit.status.contexts[0].creator.login,
+        status: .commits.nodes[0].commit.status.contexts[0].state,
+        result: .commits.nodes[0].commit.status.state
+      }
+    ],
+    [
+      .commits.nodes[0].commit.checkSuites.nodes |
+      .[] |
+      {
+        name: .app.name,
+        status,
+        result: .conclusion
+      }
+    ]
+  ] | flatten
+}
+JSON
+
+response="$(get-repo-pull-request-list-raw)"
+
+message="$(jq -r '.message' <<< "${response}")"
+if [ "${message}" != 'null' ]; then
+  echo -e "${E_CS} Error: ${message} ${N_CS}" >&2
+  sleep 1
+  exit 1
+fi
+
+jq -c "${PR_NODE_PATH} | .[] | ${JSON_STRUCTURE}" <<< "${response}"

@@ -31,4 +31,4 @@ fi
 
 while read -u 3 -r details; do
 	printpr "${@}" "${details}"
-done 3<<< "$(get-pull-request-list)"
+done 3<<< "$(get-repo-pull-request-list)"

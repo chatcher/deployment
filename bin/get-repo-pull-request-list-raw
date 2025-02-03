@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+
+set -e
+
+usage() {
+  echo "Fetch the list of Pull Requests for the current repo." >&2
+  echo >&2
+  echo "usage:" >&2
+  echo "  $(basename "${0}")" >&2
+  echo >&2
+
+  if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+  exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+read -r -d '' GRAPHQL_QUERY <<GRAPHQL || :
+{
+  repository(
+    owner: \"$(get-repo-owner)\"
+    name: \"$(get-repo-name)\"
+  ) {
+    pullRequests(
+      last: 20
+      states: [OPEN]
+    ) {
+      nodes {
+        repository {
+          owner {
+            login
+          }
+          name
+        }
+        number
+        title
+        updatedAt
+        user: author { login }
+        assignees (first:10) {
+          nodes { login  }
+        }
+        base: baseRefName
+        head: headRefName
+        draft: isDraft
+        mergeable: mergeable
+        state: mergeStateStatus
+        open: state
+        link: permalink
+        reviews(
+          states: [
+            PENDING
+            APPROVED
+            CHANGES_REQUESTED
+          ]
+          last: 50
+        ) {
+          nodes {
+            user: author { login }
+            state
+          }
+        }
+        baseRef {
+          refUpdateRule {
+            requiredStatusCheckContexts
+          }
+        }
+        commits(
+          last: 1
+        ) {
+          nodes {
+            commit {
+              checkSuites (last:1) {
+                nodes {
+                  app {
+                    name
+                    description
+                  }
+                  status
+                  conclusion
+                }
+              }
+              status {
+                contexts {
+                  context
+                  creator {login}
+                  state
+                }
+                state
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+GRAPHQL
+
+read -r -d '' REQUEST_BODY <<JSON || :
+{
+  "query": "${GRAPHQL_QUERY//$'\n'/}"
+}
+JSON
+
+AUTH_HEADER="Authorization: bearer ${GITHUB_TOKEN}"
+ACCEPT_HEADER="Accept: application/vnd.github.merge-info-preview+json"
+API_URL='https://github.cms.gov/api/graphql'
+
+curl -H "${AUTH_HEADER}" -H "${ACCEPT_HEADER}" -d "${REQUEST_BODY}" "${API_URL}" -s | jq
