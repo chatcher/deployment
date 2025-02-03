@@ -11,6 +11,8 @@ usage() {
 	echo "options:" >&2
 	echo "  -b    Include the PR body." >&2
 	echo "  -r    Include the PR reviews." >&2
+	echo "  -c    Include the PR checks." >&2
+	echo "  -o    Only print if the PR is 'open' (not draft)." >&2
 	echo "  -1    List the PR in one line." >&2
 	echo >&2
 
@@ -21,20 +23,138 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-show_body=false
-show_reviews=false
-one_line=false
+declare -A checks_results
+declare -A checks_summary
+declare -A review_results
+declare -A review_summary
+
+summarize_checks() {
+	checks="$(jq -c '.checks//[]|.[]' <<< "${details}")"
+	checks_summary[total]=0
+	checks_summary[count]=0
+	checks_summary[fails]=0
+	checks_summary[waits]=0
+
+	if [ -n "${checks}" ]; then
+	  while read -u 3 -r check; do
+	    check_actor="$(jq -r '.name' <<< "${check}")"
+	    check_status="$(jq -r '.status' <<< "${check}")"
+	    check_result="$(jq -r '.result' <<< "${check}")"
+
+	    if [ "${check_status}" = 'COMPLETED' ]; then
+	      checks_results[$check_actor]="${check_result}"
+	    else
+	      checks_results[$check_actor]="${check_status}"
+	    fi
+	  done 3<<<"${checks}"
+	fi
+
+	for check_actor in "${!checks_results[@]}"; do
+	  checks_summary[total]="$(( checks_summary[total] + 1 ))"
+
+	  check_result="${checks_results[$check_actor]}"
+
+	  case "${check_result}" in
+	    SUCCESS | COMPLETED | NEUTRAL)
+	      checks_summary[count]="$(( checks_summary[count] + 1 ))"
+	      ;;
+
+	    IN_PROGRESS | PENDING | QUEUED | REQUESTED | WAITING | EXPECTED)
+	      checks_summary[waits]="$(( checks_summary[waits] + 1 ))"
+	      ;;
+
+	    SKIPPED | CANCELLED | STALE | ACTION_REQUIRED | FAILURE | STARTUP_FAILURE | TIMED_OUT | ERROR)
+	      checks_summary[fails]="$(( checks_summary[fails] + 1 ))"
+	      ;;
+	  esac
+	done
+
+	if (( checks_summary[fails] > 0 )); then
+		pr_checks_summary="Failing: ${checks_summary[fails]} / ${checks_summary[total]}"
+		pr_check_status='FAIL'
+		pr_checks_color="${E_CS}"
+	elif (( checks_summary[count] > 0 )); then
+	  pr_checks_summary="Passing: ${checks_summary[count]} / ${checks_summary[total]}"
+	  pr_check_status='PASS'
+	  pr_checks_color="${S_CS}"
+	elif (( checks_summary[waits] > 0 )); then
+	  pr_checks_summary="Waiting: ${checks_summary[waits]} / ${checks_summary[total]}"
+	  pr_check_status='WAIT'
+	  pr_checks_color="${I_CS}"
+	fi
+}
+
+summarize_reviews() {
+	reviews="$(jq -c '.reviews//[]|.[]' <<< "${details}")"
+	review_summary[total]=0
+	review_summary[count]=0
+	review_summary[fails]=0
+
+	if [ -n "${reviews}" ]; then
+	  while read -u 3 -r review; do
+	    review_user="$(jq -r '.user' <<< "${review}")"
+	    review_status="$(jq -r '.state' <<< "${review}")"
+
+	    review_results[$review_user]="${review_status}"
+	  done 3<<<"${reviews}"
+	fi
+
+	for review_user in "${!review_results[@]}"; do
+	  review_summary[total]="$(( review_summary[total] + 1 ))"
+
+	  review_status="${review_results[$review_user]}"
+
+	  case "${review_status}" in
+	    APPROVED)
+	      review_summary[count]="$(( review_summary[count] + 1 ))"
+	      ;;
+	    CHANGES_REQUESTED)
+	      review_summary[fails]="$(( review_summary[fails] + 1 ))"
+	      ;;
+	  esac
+	done
+
+	if (( review_summary[fails] > 0 )); then
+		pr_review_summary="Blockers: ${review_summary[fails]} / ${review_summary[total]}"
+		pr_review_status='CHANGES'
+		pr_review_color="${E_CS}"
+	elif (( review_summary[count] > 0 )); then
+	  pr_review_summary="Approved: ${review_summary[count]} / ${review_summary[total]}"
+		if (( review_summary[count] > 1 )); then
+	  	pr_review_status='APPROVED'
+		  pr_review_color="${S_CS}"
+		else
+			pr_review_status='REVIEWING'
+			pr_review_color="${I_CS}"
+		fi
+	fi
+}
+
+SHOW_BODY=false
+SHOW_REVIEWS=false
+SHOW_CHECKS=false
+SHOW_ALL=true
+ONE_LINE=false
+
 while [[ "${1}" =~ ^- ]]; do
-	if [[ "${1}" =~ b ]]; then
-		show_body=true
+	if [ "${1}" = '-b' ]; then
+		SHOW_BODY=true
 	fi
 
-	if [[ "${1}" =~ r ]]; then
-		show_reviews=true
+	if [ "${1}" = '-r' ]; then
+		SHOW_REVIEWS=true
 	fi
 
-	if [[ "${1}" = '-1' ]]; then
-		one_line=true
+	if [ "${1}" = '-c' ]; then
+		SHOW_CHECKS=true
+	fi
+
+	if [ "${1}" = '-o' ]; then
+		SHOW_ALL=false
+	fi
+
+	if [ "${1}" = '-1' ]; then
+		ONE_LINE=true
 	fi
 
 	shift
@@ -66,6 +186,29 @@ if [ "${pr_open}" == 'open' ]; then open_color="${S_CS}"; fi
 if [ "${pr_open}" == 'draft' ]; then open_color="${I_CS}"; fi
 if [ "${pr_state}" == 'mergeable' ]; then state_color="${S_CS}"; fi
 
+if [ "${SHOW_ALL}" = 'false' ] && [ "${pr_open}" != 'open' ]; then
+	exit
+fi
+
+summarize_checks
+summarize_reviews
+
+if [ "${pr_check_status}" = 'FAIL' ]; then
+	pr_state='failing'
+	state_color="${E_CS}"
+elif [ "${pr_check_status}" = 'WAIT' ]; then
+	pr_state='waiting'
+	state_color="${W_CS}"
+elif [ "${pr_review_status}" = 'CHANGES' ]; then
+	pr_state='rejected'
+	state_color="${E_CS}"
+elif [ "${pr_review_status}" = 'APPROVED' ]; then
+	pr_state='approved'
+	state_color="${S_CS}"
+else
+	pr_state='in review'
+	state_color="${I_CS}"
+fi
 
 pr_age_s="$(node -p <<< "Math.round((Date.now() - new Date('${pr_date}').getTime()) / 1000)")"
 
@@ -93,73 +236,78 @@ fi
 
 pr_age="(updated ${ageCount} ${ageUnits} ago)"
 
-if [ "${one_line}" = 'true' ]; then
-	echo -e "${pr_user} ${pr_open} ${pr_link} ${pr_title}" >&1
+if [ "${ONE_LINE}" = 'true' ]; then
+	if [ "${pr_open}" = 'draft' ]; then
+		pr_title_prefix='[draft review] ';
+	fi
+	echo -en "${pr_user} ${pr_open} ${pr_state} " >&2
+	echo -e "${pr_link} ${pr_title_prefix}${pr_title}" >&1
 else
 	echo >&2
-	echo -e "${D_CS}#${pr_number} ${I_CS}${pr_user} ${K_CS}- ${open_color}${pr_open} ${state_color}${pr_state}, ${pr_mergeable} ${K_CS}${pr_age}${N_CS}" >&2
+	echo -e "${D_CS}#${pr_number} ${I_CS}${pr_user} ${K_CS}- ${open_color}${pr_open} ${state_color}${pr_state} ${K_CS}${pr_age}${N_CS}" >&2
 	echo -e "${K_CS}${pr_base} <- ${W_CS}${pr_head}${N_CS}" >&2
 	echo -e "${N_CS}${pr_title}${N_CS}" >&2
 	echo -e "${L_CS}${pr_link}${N_CS}" >&2
+	if [ "${SHOW_CHECKS}" = false ] && [ -n "${pr_checks_summary}" ]; then
+		echo -e "${pr_checks_color}${pr_checks_summary}${N_CS}" >&2
+	fi
+	if [ "${SHOW_REVIEWS}" = false ] && [ -n "${pr_review_summary}" ]; then
+		echo -e "${pr_review_color}${pr_review_summary}${N_CS}" >&2
+	fi
 fi
 
-if [ "${show_body}" = true ]; then
+if [ "${SHOW_CHECKS}" = true ]; then
+  for check_actor in "${!checks_results[@]}"; do
+    check_color="${K_CS}"
+    check_status="${checks_results[$check_actor]}"
+
+    case "${check_status}" in
+      SUCCESS | COMPLETED | NEUTRAL)
+        check_color="\033[38;5;$((124+33))m"
+        ;;
+
+      IN_PROGRESS | PENDING | QUEUED | REQUESTED | WAITING | EXPECTED)
+        check_color="\033[38;5;$((160+27))m"
+        ;;
+
+      SKIPPED | CANCELLED | STALE | ACTION_REQUIRED | FAILURE | STARTUP_FAILURE | TIMED_OUT | ERROR)
+        check_color="\033[38;5;$((196+21))m"
+        ;;
+
+      *) echo -e "${A_CS} Unknown review status: '${check_status}'${N_CS}" >&2
+    esac
+
+    echo -e "${check_actor}: ${check_color}${check_status}${N_CS}" >&2
+  done
+
+  echo -e "${pr_checks_summary}${N_CS}" >&2
+fi
+
+if [ "${SHOW_REVIEWS}" = true ]; then
+  for review_user in "${!review_results[@]}"; do
+    review_color="${K_CS}"
+    review_status="${review_results[$review_user]}"
+
+    case "${review_status}" in
+      APPROVED)
+        review_color="\033[38;5;$((124+33))m"
+        ;;
+      CHANGES_REQUESTED)
+        review_color="\033[38;5;$((196+21))m"
+        ;;
+      *) echo -e "${A_CS} Unknown review status: '${review_status}'${N_CS}" >&2
+    esac
+
+    echo -e "${review_user}: ${review_color}${review_status}${N_CS}" >&2
+  done
+
+  echo -e "${pr_review_color}${pr_review_summary}${N_CS}" >&2
+fi
+
+
+if [ "${SHOW_BODY}" = true ]; then
 	pr_body="$(jq -r '.body' <<< "${details}" | sed -e 's/\\r\\n/Ω/g' | tr 'Ω' '\n')"
 	if [ -n "${pr_body}" ]; then
 		echo -e "${pr_body}" >&2
 	fi
 fi
-
-
-if [ "${show_reviews}" = true ]; then
-	reviews="$(jq -c '.reviews//[]|.[]' <<< "${details}")"
-	declare -A review_users
-	declare -A approval
-	approval[count]=0
-	approval[total]=0
-	approval[ch_rq]=0
-
-	if [ -n "${reviews}" ]; then
-		while read -u 3 -r review; do
-			review_user="$(jq -r '.user' <<< "${review}")"
-			review_status="$(jq -r '.state' <<< "${review}")"
-
-			review_users[$review_user]="${review_status}"
-		done 3<<<"${reviews}"
-	fi
-
-	for review_user in "${!review_users[@]}"; do
-		review_color="${K_CS}"
-		review_status="${review_users[$review_user]}"
-
-		approval[total]="$(( approval[total] + 1 ))"
-
-		case "${review_status}" in
-			APPROVED)
-				approval[count]="$(( approval[count] + 1 ))"
-				review_color="\033[38;5;$((124+33))m"
-				;;
-			CHANGES_REQUESTED)
-				approval[ch_rq]="$(( approval[ch_rq] + 1 ))"
-				review_color="\033[38;5;$((196+21))m"
-				;;
-			*) echo -e "${A_CS} Unknown review status: '${review_status}'${N_CS}" >&2
-		esac
-
-		echo -e "${review_user}: ${review_color}${review_status}${N_CS}" >&2
-	done
-
-	approval_color="${I_CS}"
-	if (( approval[count] > 1 )); then
-		approval_color="${S_CS}"
-	fi
-
-	if (( approval[count] > 0 )); then
-		echo -e "${approval_color}Approved: ${approval[count]} / ${approval[total]}${N_CS}" >&2
-	fi
-
-	if (( approval[ch_rq] > 0 )); then
-		echo -e "${E_CS}Blockers: ${approval[ch_rq]} / ${approval[total]}${N_CS}" >&2
-	fi
-fi
-
