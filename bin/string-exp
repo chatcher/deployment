@@ -69,27 +69,27 @@ echo -e '  "${MY_VAR:3:3}"'" ${K_CS}->${N_CS} '${MY_VAR:3:3}'"
 
 echo -e ''
 MY_VAR='length'
-echo -e "${S_CS}"'${MY_VAR:offset}'"${N_CS} (${MY_VAR})"
+echo -e "${S_CS}"'${#MY_VAR}'"${N_CS} (${MY_VAR})"
 echo -e '  "${MY_VAR}"'"  ${K_CS}->${N_CS} '${MY_VAR}'"
 echo -e '  "${#MY_VAR}"'" ${K_CS}->${N_CS} '${#MY_VAR}'"
 
 echo -e ''
 MY_VAR='remove prefix'
-echo -e "${S_CS}"'${MY_VAR:offset}'"${N_CS} (${MY_VAR})"
+echo -e "${S_CS}"'${MY_VAR#prefix}'"${N_CS} (${MY_VAR})"
 echo -e '  "${MY_VAR}"'"  ${K_CS}->${N_CS} '${MY_VAR}'"
 echo -e '  "${MY_VAR#*e}"'" ${K_CS}->${N_CS} '${MY_VAR#*e}' (lazy)"
 echo -e '  "${MY_VAR##*e}"'" ${K_CS}->${N_CS} '${MY_VAR##*e}' (greedy)"
 
 echo -e ''
 MY_VAR='remove suffix'
-echo -e "${S_CS}"'${MY_VAR:offset}'"${N_CS} (${MY_VAR})"
+echo -e "${S_CS}"'${MY_VAR%suffix}'"${N_CS} (${MY_VAR})"
 echo -e '  "${MY_VAR}"'"  ${K_CS}->${N_CS} '${MY_VAR}'"
 echo -e '  "${MY_VAR%e*}"'" ${K_CS}->${N_CS} '${MY_VAR%e*}' (lazy)"
 echo -e '  "${MY_VAR%%e*}"'" ${K_CS}->${N_CS} '${MY_VAR%%e*}' (greedy)"
 
 echo -e ''
 MY_VAR='regex replace'
-echo -e "${S_CS}"'${MY_VAR:offset}'"${N_CS} (${MY_VAR})"
+echo -e "${S_CS}"'${MY_VAR/search/replace}'"${N_CS} (${MY_VAR})"
 echo -e '  "${MY_VAR}"'"  ${K_CS}->${N_CS} '${MY_VAR}'"
 echo -e '  "${MY_VAR/re/first}"'" ${K_CS}->${N_CS} '${MY_VAR/re/first}'"
 echo -e '  "${MY_VAR//re/all}"'" ${K_CS}->${N_CS} '${MY_VAR//re/all}'"
