@@ -15,7 +15,7 @@ usage() {
 	echo "Maintain a list of 'TODO' items." >&2
 	echo >&2
 	echo "usage:" >&2
-	echo "  $(basename "${0}") [-o] [-(d|r|p) <id> ...] [<item task>]" >&2
+	echo "  $(basename "${0}") [-o] [-(d|r|p) <id> ...] [<task>]" >&2
 	echo >&2
 	echo "options:" >&2
 	echo "  -d <id> [<id> ...]    Mark the item(s) as done" >&2
@@ -140,7 +140,6 @@ reset_todo_items() {
 }
 
 prioritize_todo_items() {
-	id="${1}"
 	temp_file="$(mktemp)"
 
 	echo -e "${S_CS} PRIORITIZE: ${N_CS}" >&2
@@ -165,6 +164,7 @@ prioritize_todo_items() {
 		# shellcheck disable=SC2076,SC2199
 		if [[ " ${@} " =~ " ${count} " ]]; then
 			strike_todo_item "${count}" "${entry}" >&2
+			seen="$((seen - 1))"
 		else
 			print_todo_item "$((count + seen))" "${entry}" >&2
 			echo "${entry}" >> "${temp_file}"
@@ -192,8 +192,7 @@ while (( $# > 0 )); do
 	elif [[ "${1}" == '-p' ]]; then
 		mode='prioritize'
 	elif [[ "${1}" == '-o' ]]; then
-		open "${todo_file_name}"
-		open "${done_file_name}"
+		open "${done_file_name}" "${todo_file_name}"
 		exit
 	elif [ "${mode}" == 'add' ]; then
 		task="${task}${task:+ }${1}"
