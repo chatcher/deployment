@@ -9,6 +9,7 @@ MAX_DEPTH=16
 TEAM_NAME='team_viper'
 PATH_REGEX='/'
 FILE_REGEX='\.[jt]s'
+EXCLUDE_REGEX='\/dist\/'
 QUERY=''
 
 usage() {
@@ -24,6 +25,7 @@ usage() {
 	echo "  -t <team name>       look within a specific team folder - default: ${TEAM_NAME}" >&2
 	echo "  -p <path pattern>    apply a specific path name pattern - default: ${PATH_REGEX}" >&2
 	echo "  -f <file pattern>    apply a specific file name pattern - default: ${FILE_REGEX}" >&2
+	echo "  -x <pattern>         exclude a specific pattern - default: ${EXCLUDE_REGEX}" >&2
 	echo "  --reset              clear out all cached data" >&2
 	# echo "  -r                   ignored cached results" >&2
 	echo >&2
@@ -34,14 +36,17 @@ usage() {
 }
 
 search() {
-	FILENAME="${1}"
+	FILEPATH="${1}"
 	QUERY="${2}"
 
-	if [ -f "${1}" ]; then
-		DISCOVERY="$(grep -E -i "${QUERY}" "${FILENAME}" | sed -E -e 's/^ +//' -e "s/(${QUERY})/"$'\033'"[33m\1"$'\033'"[m/gi")"
+	if [ -n "${EXCLUDE_REGEX}" ] && [[ "${FILEPATH}" =~ $EXCLUDE_REGEX ]]; then
+		# echo -e "${I_CS} Skipping ${FILEPATH} ${N_CS}" >&2
+		:
+	elif [ -f "${1}" ]; then
+		DISCOVERY="$(grep -E -i "${QUERY}" "${FILEPATH}" | sed -E -e 's/^ +//' -e "s/(${QUERY})/"$'\033'"[33m\1"$'\033'"[m/gi")"
 		if [ -n "${DISCOVERY}" ]; then
 			echo
-			echo -e "${I_CS} ${FILENAME} ${N_CS}"
+			echo -e "${I_CS} ${FILEPATH} ${N_CS}"
 			echo "${DISCOVERY}"
 		fi
 	fi
@@ -62,6 +67,9 @@ while (( $# > 0 )); do
 		shift
 	elif [ "${1}" == -f ]; then
 		FILE_REGEX="${2}"
+		shift
+	elif [ "${1}" == -x ]; then
+		EXCLUDE_REGEX="${2}"
 		shift
 	elif [ "${1}" == -p ]; then
 		PATH_REGEX="${2}"
@@ -94,6 +102,7 @@ echo -e "${I_CS} RESULT_TOKEN: ${RESULT_TOKEN} ${N_CS}" >&2
 echo -e "${I_CS} RESULT_FILE: ${RESULT_FILE} ${N_CS}" >&2
 echo -e "${I_CS} FILE PATTERN: ${HOME}/repo/${TEAM_NAME}/.*${PATH_REGEX}.*/.*${FILE_REGEX} ${N_CS}" >&2
 echo -e "${I_CS} TEXT PATTERN: ${QUERY} ${N_CS}" >&2
+echo -e "${I_CS} EXCLUDE PATTERN: ${EXCLUDE_REGEX} ${N_CS}" >&2
 
 if [ -f "${SEARCH_FILE}" ] && (( $(date +%s) - $(stat -f '%m' "${SEARCH_FILE}") > 3600 )); then
 	echo -e "${S_CS} Clearing stale cache ${N_CS}" >&2
