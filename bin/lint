@@ -39,8 +39,8 @@ list() {
 	fi
 }
 
-lint() {
-	echo -e "${S_CS} Linting... ${N_CS}" >&2
+lint_index() {
+	echo -e "${S_CS} Linting Index... ${N_CS}" >&2
 	list | xargs eslint
 	if [ $? ]; then
 		echo -e "${S_CS} Done (clean) ${N_CS}" >&2
@@ -50,9 +50,9 @@ lint() {
 	fi
 }
 
-lint_all() {
-	echo -e "${S_CS} Linting... ${N_CS}" >&2
-	list | xargs eslint --ignore-pattern '**\.**'
+lint_fix_index() {
+	echo -e "${S_CS} Linting & Fixing Index... ${N_CS}" >&2
+	list | xargs eslint --fix
 	if [ $? ]; then
 		echo -e "${S_CS} Done (clean) ${N_CS}" >&2
 	else
@@ -61,28 +61,43 @@ lint_all() {
 	fi
 }
 
-lint_fix() {
-	echo -e "${S_CS} Linting & Fixing... ${N_CS}" >&2
-	list | xargs eslint --fix
-	echo -e "${S_CS} Done ${N_CS}" >&2
-}
-
-npm_lint() {
+lint_all() {
 	npm='npm'
 
 	if [ "$(jq -rc '.engines.yarn' package.json)" != 'null' ]; then npm=yarn; fi
 
 	echo -e "${I_CS} Running $npm run lint ... ${N_CS}" >&2
-	$npm run lint
+	# $npm run lint
+	npx eslint .
+	if [ $? ]; then
+		echo -e "${S_CS} Done (clean) ${N_CS}" >&2
+	else
+		echo -e "${S_CS} Done (dirty) ${N_CS}" >&2
+		return 1
+	fi
 }
 
-echo eslint version
-eslint --version
+lint_fix_all() {
+	npm='npm'
+
+	if [ "$(jq -rc '.engines.yarn' package.json)" != 'null' ]; then npm=yarn; fi
+
+	echo -e "${I_CS} Running $npm run lint fix ... ${N_CS}" >&2
+	# $npm run lint:fix
+	npx eslint . --fix
+	if [ $? ]; then
+		echo -e "${S_CS} Done (clean) ${N_CS}" >&2
+	else
+		echo -e "${S_CS} Done (dirty) ${N_CS}" >&2
+		return 1
+	fi
+}
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
 run_any=1
 run_all=0
+run_fix=0
 while (( $# > 0 )); do
 	case "${1}" in
 		list)
@@ -90,8 +105,8 @@ while (( $# > 0 )); do
 			run_any=0
 			;;
 		fix)
-			lint_fix && echo -e "${S_CS} Done ${N_CS}" >&2
 			run_any=0
+			run_fix=1
 			;;
 		all)
 			run_all=1
@@ -107,13 +122,20 @@ if [ "${run_any}" == '1' ]; then
 	if [ "${run_all}" == '1' ]; then
 		if [ -z "$(list)" ]; then
 			echo -e "${S_CS} No files in index. Linting the whole project ${N_CS}" >&2
-			npm_lint
+			lint_all
 
 		else
-			lint_all && echo -e "${S_CS} Index is clean. Linting the whole project ${N_CS}" >&2 && sleep 2 && npm_lint
+			lint_index && echo -e "${S_CS} Index is clean. Linting the whole project ${N_CS}" >&2 && sleep 2 && lint_all
 		fi
 	else
-		lint
+		# lint
+		lint_index
+	fi
+elif [ "${run_fix}" == '1' ]; then
+	if [ "${run_all}" == '1' ]; then
+		lint_fix_all && echo -e "${S_CS} Done ${N_CS}" >&2
+	else
+		lint_fix_index && echo -e "${S_CS} Done ${N_CS}" >&2
 	fi
 fi
 
