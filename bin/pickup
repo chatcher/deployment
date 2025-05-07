@@ -15,18 +15,18 @@ usage() {
 	exit 1
 }
 
-try_merge() {
-	branch="${1}"
-	git merge --squash "origin/${branch}" >&2
-	# git merge --autostash --squash "origin/${branch}" >&2
-	# git merge -m "Temp merge commit" "origin/${branch}" >&2
-}
+# try_merge() {
+# 	branch="${1}"
+# 	git merge --squash "origin/${branch}" >&2
+# 	# git merge --autostash --squash "origin/${branch}" >&2
+# 	# git merge -m "Temp merge commit" "origin/${branch}" >&2
+# }
 
-retry_merge() ({
-	prompt 'You wanna go merge that?' && exit
-	git merge --abort >&2
-	exit 1
-})
+# retry_merge() ({
+# 	prompt 'You wanna go merge that?' && exit
+# 	git merge --abort >&2
+# 	exit 1
+# })
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
@@ -44,49 +44,72 @@ if [ -z "${branch}" ]; then usage "Branch or Pull Request Number required."; fi
 
 echo -e "${I_CS} Branch: ${branch} ${N_CS}" >&2
 
+initial="$(get-current-branch)"
+
 sha="$(stash)"
 trap 'unstash "${sha}"' EXIT
 
-echo -e "${S_CS} Fetching remote branches... ${N_CS}" >&2
-git fetch >&2
 
-echo -e "${S_CS} Let's see if we can actually merge that... ${N_CS}" >&2
-try_merge "${branch}" || retry_merge
+echo gonna run:
+echo checkout "${branch}"
+echo git reset origin/dev
+echo checkout "${initial}"
+echo mergestashes
 
-# # git pull || :
-
-# git checkout "${branch}"
-# checkout tmp/pickup
-# git merge "${initial}"
-
-
-
-# # git rebase "${initial}" || prompt 'Rebase failed. You wanna take care of that?'
-
-# git reset "${initial}"
-
-# checkout "${initial}" || prompt "checkout '${initial}' failed. You wanna fix that crap?"
+if prompt 'ok?'; then
+	checkout "${branch}"
+	git reset origin/dev
+	checkout "${initial}"
+	mergestashes
+fi
 
 
-# we want all the changes in target branch plus our local changes
-# we want to pop stash onto target branch and fix conflicts
-# ! on target branch with local changes
-# reset back to initial
-# checkout initial
+
+# checkout "${branch}"
+# git reset "$"
 
 
-# stash changes
-# checkout target, keep local initial
-# merge initial into target
-# checkout initial, keep local target
-# hard reset target
-# delete target
-# pop stash
+
+# echo -e "${S_CS} Fetching remote branches... ${N_CS}" >&2
+# git fetch >&2
+
+# echo -e "${S_CS} Let's see if we can actually merge that... ${N_CS}" >&2
+# try_merge "${branch}" || retry_merge
+
+# # # git pull || :
+
+# # git checkout "${branch}"
+# # checkout tmp/pickup
+# # git merge "${initial}"
 
 
-# stash changes
-# checkout local/dev, keep initial
-# merge remote target
-# reset to initial
-# checkout initial
-# pop stash
+
+# # # git rebase "${initial}" || prompt 'Rebase failed. You wanna take care of that?'
+
+# # git reset "${initial}"
+
+# # checkout "${initial}" || prompt "checkout '${initial}' failed. You wanna fix that crap?"
+
+
+# # we want all the changes in target branch plus our local changes
+# # we want to pop stash onto target branch and fix conflicts
+# # ! on target branch with local changes
+# # reset back to initial
+# # checkout initial
+
+
+# # stash changes
+# # checkout target, keep local initial
+# # merge initial into target
+# # checkout initial, keep local target
+# # hard reset target
+# # delete target
+# # pop stash
+
+
+# # stash changes
+# # checkout local/dev, keep initial
+# # merge remote target
+# # reset to initial
+# # checkout initial
+# # pop stash
