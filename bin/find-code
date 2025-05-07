@@ -78,6 +78,8 @@ while (( $# > 0 )); do
 		echo -e "${S_CS} Clearing cache directory ${N_CS}" >&2
 		rm -r "${CACHE_DIR}"
 		exit
+	elif [[ "${1}" =~ ^- ]]; then
+		usage "Unknown option: '${1}'"
 	else
 		QUERY="${QUERY}${QUERY:+ }${1}"
 	fi
@@ -89,60 +91,60 @@ if [ -z "${QUERY}" ]; then usage 'Search query required.'; fi
 
 REFERENCE="${MIN_DEPTH}-${MAX_DEPTH}:${TEAM_NAME}:${PATH_REGEX}:${FILE_REGEX}"
 SEARCH_TOKEN="$(md5 <<< "${REFERENCE}")"
-SEARCH_FILE="${CACHE_DIR}/${SEARCH_TOKEN}/files"
+FILE_CACHE="${CACHE_DIR}/${SEARCH_TOKEN}/files"
 RESULT_TOKEN="$(md5 <<< "${QUERY}")"
-RESULT_FILE="${CACHE_DIR}/${SEARCH_TOKEN}/${RESULT_TOKEN}"
+RESULTS_FILE="${CACHE_DIR}/${SEARCH_TOKEN}/${RESULT_TOKEN}"
 
 mkdir -p "${CACHE_DIR}/${SEARCH_TOKEN}"
 
 echo -e "${I_CS} REFERENCE: ${REFERENCE} ${N_CS}" >&2
 echo -e "${I_CS} SEARCH_TOKEN: ${SEARCH_TOKEN} ${N_CS}" >&2
-echo -e "${I_CS} SEARCH_FILE: ${SEARCH_FILE} ${N_CS}" >&2
+echo -e "${I_CS} FILE_CACHE: ${FILE_CACHE} ${N_CS}" >&2
 echo -e "${I_CS} RESULT_TOKEN: ${RESULT_TOKEN} ${N_CS}" >&2
-echo -e "${I_CS} RESULT_FILE: ${RESULT_FILE} ${N_CS}" >&2
-echo -e "${I_CS} FILE PATTERN: ${HOME}/repo/${TEAM_NAME}/.*${PATH_REGEX}.*/.*${FILE_REGEX} ${N_CS}" >&2
+echo -e "${I_CS} RESULTS_FILE: ${RESULTS_FILE} ${N_CS}" >&2
+echo -e "${I_CS} FILE PATTERN: ${HOME}/repo/${TEAM_NAME}/.*${PATH_REGEX}.*${FILE_REGEX} ${N_CS}" >&2
 echo -e "${I_CS} TEXT PATTERN: ${QUERY} ${N_CS}" >&2
 echo -e "${I_CS} EXCLUDE PATTERN: ${EXCLUDE_REGEX} ${N_CS}" >&2
 
-if [ -f "${SEARCH_FILE}" ] && (( $(date +%s) - $(stat -f '%m' "${SEARCH_FILE}") > 3600 )); then
+if [ -f "${FILE_CACHE}" ] && (( $(date +%s) - $(stat -f '%m' "${FILE_CACHE}") > 3600 )); then
 	echo -e "${S_CS} Clearing stale cache ${N_CS}" >&2
-	rm -f "${SEARCH_FILE}"
-	rm -f "${RESULT_FILE}"
+	rm -f "${FILE_CACHE}"
+	rm -f "${RESULTS_FILE}"
 fi
 
-if [ -f "${SEARCH_FILE}" ] && [ "$(wc -l < "${SEARCH_FILE}" | sed 's/ //g')" == '0' ]; then
+if [ -f "${FILE_CACHE}" ] && [ "$(wc -l < "${FILE_CACHE}" | sed 's/ //g')" == '0' ]; then
 	echo -e "${S_CS} Clearing empty cache ${N_CS}" >&2
-	rm -f "${SEARCH_FILE}"
-	rm -f "${RESULT_FILE}"
+	rm -f "${FILE_CACHE}"
+	rm -f "${RESULTS_FILE}"
 fi
 
-if [ -f "${RESULT_FILE}" ] &&  (( $(date +%s) - $(stat -f '%m' "${RESULT_FILE}") > 3600 )); then
+if [ -f "${RESULTS_FILE}" ] &&  (( $(date +%s) - $(stat -f '%m' "${RESULTS_FILE}") > 3600 )); then
 	echo -e "${S_CS} Cleared cached results ${N_CS}" >&2
-	rm "${RESULT_FILE}"
+	rm "${RESULTS_FILE}"
 fi
 
-if [ -e "${SEARCH_FILE}" ]; then
+if [ -e "${FILE_CACHE}" ]; then
 	echo -e "${S_CS} Using cached search ${N_CS}" >&2
 else
 	echo -e "${S_CS} Gathering files... ${N_CS}" >&2
-	time find -L -Ex "${HOME}/repo/${TEAM_NAME}" -type f -mindepth "${MIN_DEPTH}" -maxdepth "${MAX_DEPTH}" | grep -Ev -e '/\.|node_modules|coverage' | grep -E -e ".*${PATH_REGEX}.*/.*${FILE_REGEX}$" | sort > "${SEARCH_FILE}"
+	time find -L -Ex "${HOME}/repo/${TEAM_NAME}" -type f -mindepth "${MIN_DEPTH}" -maxdepth "${MAX_DEPTH}" | grep -Ev -e '/\.|node_modules|coverage' | grep -E -e ".*${PATH_REGEX}.*${FILE_REGEX}$" | sort > "${FILE_CACHE}"
 	echo -e "${S_CS} Okay, that was fun ${N_CS}" >&2
 fi
 
-TOTAL="$(wc -l < "${SEARCH_FILE}" | sed 's/ //g')"
+TOTAL="$(wc -l < "${FILE_CACHE}" | sed 's/ //g')"
 
 if [ "${TOTAL}" == '0' ]; then
 	echo -e "${S_CS} No files I guess? ${N_CS}" >&2
-	echo find -L -Ex "${HOME}/repo/${TEAM_NAME}" -type f -mindepth "${MIN_DEPTH}" -maxdepth "${MAX_DEPTH}" \| grep -Ev -e '/\.|node_modules|coverage' \| grep -E -e ".*${PATH_REGEX}.*/.*${FILE_REGEX}$"
+	echo find -L -Ex "${HOME}/repo/${TEAM_NAME}" -type f -mindepth "${MIN_DEPTH}" -maxdepth "${MAX_DEPTH}" \| grep -Ev -e '/\.|node_modules|coverage' \| grep -E -e ".*${PATH_REGEX}.*${FILE_REGEX}$"
 	exit 1
 fi
 
-if [ -e "${RESULT_FILE}" ]; then
+if [ -e "${RESULTS_FILE}" ]; then
 	echo -e "${S_CS} Displaying cached results ${N_CS}" >&2
-	cat "${RESULT_FILE}"
+	cat "${RESULTS_FILE}"
 else
 	echo -e "${S_CS} Searching ${TOTAL} files... ${N_CS}" >&2
-	touch "${RESULT_FILE}"
+	touch "${RESULTS_FILE}"
 	time (
 		TIMESTAMP=0
 		NOWISH=0
@@ -150,7 +152,7 @@ else
 		while read -u 3 -r FILENAME; do
 			INDEX="$(( INDEX + 1 ))"
 
-			search "${FILENAME}" "${QUERY}" | tee -a "${RESULT_FILE}"
+			search "${FILENAME}" "${QUERY}" | tee -a "${RESULTS_FILE}"
 
 			if ! (( INDEX % 100 )); then
 				NOWISH="$(date +%s )"
@@ -160,7 +162,7 @@ else
 				progress "${INDEX}" "${TOTAL}"
 				TIMESTAMP="$((NOWISH + 1))"
 			fi
-		done 3< "${SEARCH_FILE}"
+		done 3< "${FILE_CACHE}"
 		progress "${INDEX}" "${TOTAL}"
 	)
 fi
