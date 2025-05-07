@@ -17,6 +17,9 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
+git restore docs/v1/swagger.json || :
+git restore docs/v1/swagger_v3.json || :
+
 if has-changes; then
   # git stash create -u >&1
   # git reset --hard >&2
