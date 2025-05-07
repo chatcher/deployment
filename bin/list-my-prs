@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+set -e
+# set -x
+
+usage() {
+	echo "List all Pull Requests for user." >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") [-b|--body]" >&2
+	echo >&2
+	echo "options:" >&2
+	echo "  -b    Include the Pull Request body." >&2
+	echo "  -r    Include the Pull Request reviews." >&2
+	echo "  -c    Include the Pull Request checks." >&2
+	echo "  -o    Only print if the Pull Request is 'open' (not draft)." >&2
+	echo "  -1    List the Pull Request in one line." >&2
+
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+list-prs() {
+	while read -u 3 -r details; do
+		printpr "${@}" "${details}"
+	done 3<<< "$(get-user-pull-request-list)"
+}
+
+list-prs "${@}"
