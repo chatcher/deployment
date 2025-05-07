@@ -2,9 +2,12 @@
 
 # set -x
 
+LOAD_NVM=true
+
 preamble() {
-	clear
-	clear
+	# clear
+	# clear
+	[ "${LOAD_NVM}" == 'true' ] && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && nvm use >&2
 	echo -e "${S_CS} ${1} ${N_CS}" >&2
 }
 
@@ -52,7 +55,7 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-while ! [ -f 'package.json' ] && ! [ -f 'go.mod' ] && [ "$(pwd)" != '/' ]; do
+while ! [ -d '.git' ] && ! [ -f 'package.json' ] && ! [ -f 'go.mod' ] && [ "$(pwd)" != '/' ]; do
 	cd ..
 done
 
@@ -100,7 +103,25 @@ watch_dir="${server_dir}"
 if [ -d "${watch_dir}/api" ]; then watch_dir="${watch_dir}/api"; fi
 if [ -d 'common' ]; then watch_dir="${watch_dir},common"; fi
 
+if [ "${1}" == '--keep-nvm' ]; then
+	echo "set flag early"
+	LOAD_NVM=false
+	shift
+fi
+
 mode="${1:-default}"
+if (( $# > 0 )); then shift; fi
+
+
+if [ "${1}" == '--keep-nvm' ]; then
+	echo "set flag late"
+	LOAD_NVM=false
+	shift
+fi
+
+if (( $# > 0 )); then
+	usage "Unexpected param: '${1}'"
+fi
 
 echo -e "${I_CS} mode: ${mode} ${N_CS}" >&2
 echo -e "${I_CS} npx: ${npx} ${N_CS}" >&2
@@ -109,7 +130,21 @@ echo -e "${I_CS} test_script: ${test_script} ${N_CS}" >&2
 echo -e "${I_CS} test_path: ${test_path} ${N_CS}" >&2
 echo -e "${I_CS} watch_dirs: ${watch_dirs[*]} ${N_CS}" >&2
 
-if [[ "${mode}" =~ default ]]; then
+echo -e "${I_CS} LOAD_NVM: ${LOAD_NVM} ${N_CS}" >&2
+
+if [[ "${mode}" =~ install ]]; then
+	preamble "Installing via ${npx}"
+	if is-yarn; then
+		echo is yarn
+		yarn
+	elif [ -f package-lock.json ]; then
+		echo has package lock
+		npm i
+	else
+		usage "Not sure how to install in here"
+	fi
+elif [[ "${mode}" =~ default ]]; then
+	clear
 	if [[ "${dev_script}" =~ nodemon ]]; then
 		preamble "[h1] Hosting via ${npx} nodemon"
 
@@ -138,6 +173,7 @@ elif [[ "${mode}" =~ prod ]]; then
 	node "./${main_script}"
 
 elif [[ "${mode}" =~ debug ]]; then
+	clear
 	if [[ "${dev_script}" =~ nodemon ]]; then
 		preamble "[h1] Hosting via ${npx} nodemon"
 
@@ -159,6 +195,7 @@ elif [[ "${mode}" =~ debug ]]; then
 	fi
 
 elif [[ "${mode}" =~ test ]]; then
+	clear
 	if [ "${test_script}" = 'ng test' ]; then
 		preamble "[t1] Testing via ${npx} ng test watch=true"
 		$npx ng test --source-map=false --watch=true --code-coverage
@@ -283,6 +320,7 @@ elif [[ "${mode}" =~ test ]]; then
 	fi
 
 elif [[ "${mode}" =~ once ]]; then
+	clear
 	if [ "${test_script}" = 'ng test' ]; then
 		preamble " [o1] Testing via ${npx} ng test watch=false"
 		$npx ng test --source-map=false --watch=false --code-coverage
@@ -325,6 +363,7 @@ elif [[ "${mode}" =~ once ]]; then
 	fi
 
 elif [[ "${mode}" =~ cover ]]; then
+	clear
 	rm -rf './coverage'
 
 	if [ "${test_script}" = 'ng test' ]; then
