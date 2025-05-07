@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set -e
-set -x
+# set -x
 
 usage() {
 	echo "Description" >&2
@@ -20,8 +20,83 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-if is-yarn; then
-	yarn audit --groups dependencies
-else
-	npm audit --omit=dev
+run_audit() {
+	if [ "${1}" = 'fix' ]; then
+		audit-fix
+	elif is-yarn && [ "${DEV_DEPENDENCIES}" != 'true' ]; then
+		yarn audit --groups dependencies
+	elif is-yarn && [ "${DEV_DEPENDENCIES}" = 'true' ]; then
+		yarn audit
+	elif [ "${DEV_DEPENDENCIES}" != 'true' ]; then
+		npm audit --omit=dev
+	elif [ "${DEV_DEPENDENCIES}" = 'true' ]; then
+		npm audit
+	else
+		usage 'Not sure what to do'
+	fi
+}
+
+REPO_NAME="$(basename "$(pwd)")"
+REPO_SUFFIX="${REPO_NAME##*_}"
+DEV_DEPENDENCIES=false
+ONE_LINE=false
+
+while [[ "${1}" =~ ^- ]]; do
+	if [ "${1}" = '-a' ]; then
+		DEV_DEPENDENCIES=true
+	fi
+
+	if [ "${1}" = '-q' ]; then
+		ONE_LINE=true
+	fi
+
+	shift
+done
+
+# basename "$(pwd)"
+
+if [ -f 'go.mod' ]; then
+	echo -e "${W_SC} Cannot audit a golang project. ${N_CS}" >&2
+	exit
+elif [ "${REPO_SUFFIX}" == 'step' ]; then
+	echo -e "${W_SC} Cannot audit a step function. ${N_CS}" >&2
+	exit
 fi
+
+run_audit > audit-log.txt || :
+
+if [ "${ONE_LINE}" != 'true' ]; then
+	cat audit-log.txt >&2
+else
+	if is-yarn && [ "${DEV_DEPENDENCIES}" != 'true' ]; then
+		RESULT_LINE="$(cat audit-log.txt | tail -n 3 | head -n 1)"
+		if ! [[ "${RESULT_LINE}" =~ vulnerabil ]]; then
+			RESULT_LINE="$(cat audit-log.txt | tail -n 2 | head -n 1)"
+		fi
+
+	elif is-yarn && [ "${DEV_DEPENDENCIES}" = 'true' ]; then
+		RESULT_LINE="$(cat audit-log.txt | tail -n 3 | head -n 1)"
+		if ! [[ "${RESULT_LINE}" =~ vulnerabil ]]; then
+			RESULT_LINE="$(cat audit-log.txt | tail -n 2 | head -n 1)"
+		fi
+
+	elif [ "${DEV_DEPENDENCIES}" != 'true' ]; then
+		RESULT_LINE="$(cat audit-log.txt | tail -n 7 | head -n 1)"
+		if ! [[ "${RESULT_LINE}" =~ vulnerabil ]]; then
+			RESULT_LINE="$(cat audit-log.txt | tail -n 4 | head -n 1)"
+		fi
+
+	elif [ "${DEV_DEPENDENCIES}" = 'true' ]; then
+		RESULT_LINE="$(cat audit-log.txt | tail -n 7 | head -n 1)"
+		if ! [[ "${RESULT_LINE}" =~ vulnerabil ]]; then
+			RESULT_LINE="$(cat audit-log.txt | tail -n 4 | head -n 1)"
+		fi
+
+	else
+		usage 'dunno'
+	fi
+
+	sed -E -e 's/found //' -e 's/ - .*//' <<< "${RESULT_LINE}"
+fi
+
+rm -f audit-log.txt | :
