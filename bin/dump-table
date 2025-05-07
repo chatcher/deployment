@@ -130,6 +130,10 @@ db_pass=
 db_name=
 
 suffix="$(sed -E -e 's/^[^-]+-?//' <<< "${db_id}")"
+if [ "${suffix}" = 'test' ]; then
+	suffix=''
+fi
+
 filename="tables/${schema}${suffix:+/}${suffix}/${table}.txt"
 
 if [[ "${db_id}" =~ oracle ]]; then
