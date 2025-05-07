@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set -e
-set -x
+# set -x
 
 usage() {
 	echo "Move node_modules aside, and then delete it in the background." >&2
@@ -17,13 +17,14 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-TIMESTAMP="$(date +%Y%m%d%H%M%S)"
+TIMESTAMP="$(date +%Y%m%d%H%M%S).${RANDOM}"
 NODE_MODULES='node_modules'
 MOVED_NAME="${HOME}/${NODE_MODULES}.rm.${TIMESTAMP}"
 
 if [ -d "./${NODE_MODULES}" ]; then
+	echo -e "${I_CS} Removing directory: ${NODE_MODULES} ${N_CS}" >&2
 	mv "./${NODE_MODULES}" "${MOVED_NAME}"
 	rm -rf "${MOVED_NAME}" &
 else
-	usage "No directory: ${NODE_MODULES}"
+	echo -e "${I_CS} No directory: ${NODE_MODULES} ${N_CS}" >&2
 fi
