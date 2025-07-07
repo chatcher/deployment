@@ -492,4 +492,4 @@ else
 	usage "I dunno how to ${mode}"
 fi
 
-echo -e "${S_CS} Okay, all done. ${N_CS}" >&2
+echo -e "${S_CS} Done ${N_CS}" >&2
