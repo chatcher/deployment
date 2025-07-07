@@ -3,6 +3,8 @@
 set -e
 # set -x
 
+TIMER_LOG='/tmp/timer-log.txt'
+
 usage() {
 	echo "Description" >&2
 	echo >&2
@@ -26,12 +28,19 @@ timer() ({
 	SLEEP_TIME="${1}"
 	shift
 
+	echo -e "${I_CS} > [${SLEEP_TIME}s] ${@} ${N_CS} " >&2
+	touch "${TIMER_LOG}"
+	echo "${@}" >> "${TIMER_LOG}"
+
 	sleep "${SLEEP_TIME}"
 
 	play-sound alert &
 
 	# shellcheck disable=SC2068
 	$@
+
+	grep -v "${*}" "${TIMER_LOG}" || : > "${TIMER_LOG}.tmp"
+	mv "${TIMER_LOG}.tmp" "${TIMER_LOG}"
 })
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
