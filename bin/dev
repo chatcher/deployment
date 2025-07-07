@@ -17,5 +17,9 @@ usage() {
 
 if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
 
-git branch -D local/dev || :
-git checkout -b local/dev
+# git branch -D local/dev || :
+# git checkout -b local/dev
+
+
+jq '.scripts["docker-start"]' package.json | grep newrelic
+jq '.dependencies.newrelic' package.json
