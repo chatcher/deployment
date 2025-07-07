@@ -7,7 +7,17 @@ usage() {
 	echo "Checkout the specified Branch or Pull Request" >&2
 	echo >&2
 	echo "usage:" >&2
-	echo "  $(basename "${0}") <branch|prn>" >&2
+	echo "  $(basename "${0}") [-c|-y|-r|-C] <branch|prn>" >&2
+	echo >&2
+	echo "options:" >&2
+	echo "  -c       default to current branch, prompt to change to main branch (default: false)" >&2
+	echo "  -y       skip prompts (default: false)" >&2
+	echo "  -r       only checkout if the remote branch exists (default: false)" >&2
+	echo "  -C       same as -c -y" >&2
+	echo >&2
+	echo "params:" >&2
+	echo "  branch   specify branch name (default: main branch)" >&2
+	echo "  prn      pull request number" >&2
 	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
@@ -16,22 +26,24 @@ usage() {
 }
 
 delete_branch_like_a_jerk() {
-	branch="${1}"
-	if prompt "Are you sure you want to delete ${branch}?"; then
-		git branch -D "${branch}"
+	local BRANCH_NAME
+	BRANCH_NAME="${1}"
+	if prompt "Are you sure you want to delete ${BRANCH_NAME}?"; then
+		git branch -D "${BRANCH_NAME}"
 	fi
 }
 
 delete_branch() {
-	branch="${1}"
-	if [[ "${branch}" =~ ^te?mp/ ]]; then
+	local BRANCH_NAME
+	BRANCH_NAME="${1}"
+	if [[ "${BRANCH_NAME}" =~ ^te?mp/ ]]; then
 		echo -e "${S_CS} Deleting temp branch ${N_CS}" >&2
-		git branch -D "${branch}"
-	elif [[ "${branch}" =~ ^local/ ]]; then
+		git branch -D "${BRANCH_NAME}"
+	elif [[ "${BRANCH_NAME}" =~ ^local/ ]]; then
 		echo -e "${S_CS} Keeping local branch ${N_CS}" >&2
-	elif [ -n "${branch}" ]; then
-		echo -e "${S_CS} Deleting ${branch} ${N_CS}" >&2
-		git branch -d "${branch}" || delete_branch_like_a_jerk "${branch}"
+	elif [ -n "${BRANCH_NAME}" ]; then
+		echo -e "${S_CS} Deleting ${BRANCH_NAME} ${N_CS}" >&2
+		git branch -d "${BRANCH_NAME}" || delete_branch_like_a_jerk "${BRANCH_NAME}"
 	else
 		echo -e "${S_CS} No old branch to delete (probably a detached head) ${N_CS}" >&2
 	fi
@@ -70,51 +82,75 @@ git_clone() {
 }
 
 git_checkout() {
-	initial="$(get-current-branch)"
-	branch="${1:-$(get-repo-base-branch)}"
-	sha="$(stash)"
-	trap 'unstash "${sha}"' EXIT
+	local BASE_BRANCH
+	local INITIAL_BRANCH
+	local BRANCH_NAME
 
-	if [[ "${branch}" =~ ^[0-9]+$ ]]; then
-		pr_branch="$(get-pull-request "${branch}" | jq -r '.head' )"
-		if [ "${pr_branch}" == 'null' ]; then usage "Couldn't find a branch for PR #${branch}."; fi
-		branch="${pr_branch}"
+	# BASE_BRANCH="$(get-repo-base-branch)"
+	INITIAL_BRANCH="$(get-current-branch)"
+	BRANCH_NAME="${1}"
+	CHECKOUT_SHA="$(stash)"
+	trap 'unstash "${CHECKOUT_SHA}"' EXIT
+
+	if [[ "${BRANCH_NAME}" =~ ^[0-9]+$ ]]; then
+		pr_branch="$(get-pull-request "${BRANCH_NAME}" | jq -r '.head' )"
+		if [ "${pr_branch}" == 'null' ]; then usage "Couldn't find a branch for PR #${BRANCH_NAME}."; fi
+		BRANCH_NAME="${pr_branch}"
 	fi
 
-	if [ -z "${branch}" ]; then usage "Branch or Pull Request Number required."; fi
+
+	if [ -z "${BRANCH_NAME}" ]; then
+		if [ -z "${BASE_BRANCH}" ]; then BASE_BRANCH="$(get-repo-base-branch)"; fi
+		BRANCH_NAME="${BASE_BRANCH}"
+	fi
 
 	echo -e "${S_CS} Fetching remote branches... ${N_CS}" >&2
 	git fetch
 
-	if [ "${branch}" == "${initial}" ]; then
-		echo -e "${S_CS} You're already on ${branch} ${N_CS}" >&2
+	if [ "${BRANCH_NAME}" == "${INITIAL_BRANCH}" ]; then
+		echo -e "${S_CS} You're already on ${BRANCH_NAME}; figuring out what to do... ${N_CS}" >&2
 
-	elif has-local-branch "${branch}"; then
+		if ! has-remote-branch "${BRANCH_NAME}"; then
+			echo -e "${W_CS} But it doesn't exist any more! ${N_CS}" >&2
+			if [ -z "${BASE_BRANCH}" ]; then BASE_BRANCH="$(get-repo-base-branch)"; fi
+			if [ "${SKIP_PROMPT}" = '1' ] || prompt "Want to go back to ${BASE_BRANCH}?"; then
+				git checkout "${BASE_BRANCH}" || usage "Failed to checkout ${BASE_BRANCH}"
+				git pull
+				git branch -D "${BRANCH_NAME}"
+			else
+				echo -e "${S_CS} Okay... ${N_CS}" >&2
+			fi
+		fi
+
+	elif has-local-branch "${BRANCH_NAME}"; then
 		echo -e "${S_CS} Checking out local branch... ${N_CS}" >&2
-		git checkout "${branch}" || usage "Failed to checkout ${branch}"
+		git checkout "${BRANCH_NAME}" || usage "Failed to checkout ${BRANCH_NAME}"
 
-	elif has-remote-branch  "${branch}"; then
+	elif has-remote-branch  "${BRANCH_NAME}"; then
 		echo -e "${S_CS} Checking out remote branch... ${N_CS}" >&2
-		git checkout "${branch}" || usage "Failed to checkout ${branch}"
+		git checkout "${BRANCH_NAME}" || usage "Failed to checkout ${BRANCH_NAME}"
 
-	elif [[ "${branch}" =~ ^te?mp ]] || [[ "${branch}" =~ ^local ]]; then
+	elif [[ "${BRANCH_NAME}" =~ ^te?mp ]] || [[ "${BRANCH_NAME}" =~ ^local ]]; then
 		echo -e "${S_CS} Creating temp branch... ${N_CS}" >&2
-		git checkout -b "${branch}" || usage "Failed to checkout ${branch}"
+		git checkout -b "${BRANCH_NAME}" || usage "Failed to checkout ${BRANCH_NAME}"
+
+	elif [ "${CAN_CREATE}" == '1' ]; then
+		echo -e "${S_CS} Creating new branch... ${N_CS}" >&2
+		git checkout -b "${BRANCH_NAME}" || usage "Failed to checkout ${BRANCH_NAME}"
+		git push -u origin "${BRANCH_NAME}" --no-verify
 
 	else
-		echo -e "${S_CS} Creating new branch... ${N_CS}" >&2
-		git checkout -b "${branch}" || usage "Failed to checkout ${branch}"
-		git push -u origin "${branch}" --no-verify
-
+		echo -e "${W_CS} Remote branch doesn't exist: '${BRANCH_NAME}' ${N_CS}" >&2
+		BRANCH_NAME="${INITIAL_BRANCH}"
 	fi
 
-	if has-remote-branch  "${branch}"; then
+	if has-remote-branch "${BRANCH_NAME}"; then
 		echo -e "${S_CS} Updating branch... ${N_CS}" >&2
 		git pull
 	fi
 
-	if [ "${branch}" != "${initial}" ]; then
-		delete_branch "${initial}"
+	if [ "${BRANCH_NAME}" != "${INITIAL_BRANCH}" ]; then
+		delete_branch "${INITIAL_BRANCH}"
 	fi
 }
 
@@ -123,17 +159,45 @@ while ! [ -d '.git' ] && [ "$(pwd)" != '/' ]; do
 	cd ..
 done
 
-if [[ "${1}" =~ ^https?:// ]]; then
+BRANCH_NAME=
+SKIP_PROMPT=0
+CAN_CREATE=1
+
+while (( $# > 0 )); do
+  # if [ -d "${1}" ]; then
+    # REPO_PATH="${1}"
+  # elif [ -d "${HOME}/repo/${1}" ]; then
+    # REPO_PATH="${HOME}/repo/${1}"
+  if [ "${1}" == '-c' ]; then
+  	BRANCH_NAME="$(get-current-branch)"
+  elif [ "${1}" == '-C' ]; then
+  	BRANCH_NAME="$(get-current-branch)"
+  	SKIP_PROMPT=1
+  elif [ "${1}" == '-y' ]; then
+  	SKIP_PROMPT=1
+  elif [ "${1}" == '-r' ]; then
+  	CAN_CREATE=0
+  else
+    # usage "Unknown param: '${1}'"
+		BRANCH_NAME="${1}"
+  fi
+  shift
+done
+
+if [[ "${BRANCH_NAME}" =~ ^https?:// ]]; then
 	if ! [ -d '.git' ]; then
 		cd "${owd}" || usage 'I got lost on my way home'
-		git_clone "$@"
+		git_clone "${BRANCH_NAME}"
 	else
 		usage 'Are you trying to use a branch with that name? Suspicious...'
 	fi
 
 elif ! [ -d '.git' ]; then
 	usage 'No .git directory found in path; better luck next time.'
+
 else
 	echo -e "${S_CS} Updating $(pwd) ${N_CS}" >&2
-	git_checkout "$@"
+	git_checkout "${BRANCH_NAME}"
 fi
+
+echo -e "${S_CS} Checkout done ${N_CS}" >&2
