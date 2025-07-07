@@ -2,4 +2,6 @@
 
 echo -e "${S_CS} Loading base branch... ${N_CS}" >&2
 
-git remote show "origin" | grep 'HEAD branch:' | sed -E -e 's/.*: //'
+# git remote show "origin" | grep 'HEAD branch:' | sed -E -e 's/.*: //'
+
+git symbolic-ref refs/remotes/origin/HEAD --short | sed -E -e 's|origin/||'
