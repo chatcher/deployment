@@ -21,28 +21,28 @@ if [ "$(get-current-branch)" != "$(get-repo-base-branch)" ]; then
   usage "Should only be run from '$(get-repo-base-branch)'."
 fi
 
-sha="$(stash)"
+# sha="$(stash)"
 
-temp="tmp/$(date +%s)"
-checkout "${temp}"
+# temp="tmp/$(date +%s)"
+# checkout "${temp}"
 
 while read -u 3 -r branch; do
   if [[ "${branch}" =~ ^tmp ]]; then
-    git merge "${branch}" || fix_merge
+    # git merge "${branch}" || fix_merge
     git branch -d "${branch}" &>/dev/null || echo "not cleaned: ${branch}"
   fi
 done 3<<< "$(git branch -l 'tmp/*')"
 
-git reset "origin/$(get-repo-base-branch)"
-checkout
+# git reset "origin/$(get-repo-base-branch)"
+# checkout
 
-if [ -n "${sha}" ]; then
-  echo -e "${I_CS} Previous changes have been stashed. ${N_CS}" >&2
-fi
+# if [ -n "${sha}" ]; then
+#   echo -e "${I_CS} Previous changes have been stashed. ${N_CS}" >&2
+# fi
 
-if has-changes; then
-  echo -e "${I_CS} Current changes were picked up from the temp branches. ${N_CS}" >&2
-fi
+# if has-changes; then
+#   echo -e "${I_CS} Current changes were picked up from the temp branches. ${N_CS}" >&2
+# fi
 
 
 echo -e "${S_CS} Done ${N_CS}" >&2
