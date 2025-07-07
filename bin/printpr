@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -e
+# set -x
 
 usage() {
 	echo "Description" >&2
@@ -14,6 +15,7 @@ usage() {
 	echo "  -c    Include the Pull Request checks." >&2
 	echo "  -o    Only print if the Pull Request is 'open' (not draft)." >&2
 	echo "  -1    List the Pull Request in one line." >&2
+	echo "  -s    Shorter summary." >&2
 	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
@@ -70,15 +72,18 @@ summarize_checks() {
 	done
 
 	if (( checks_summary[fails] > 0 )); then
-		pr_checks_summary="Failing: ${checks_summary[fails]} / ${checks_summary[total]}"
+		pr_checks_summary="Checks Failing: ${checks_summary[fails]} / ${checks_summary[total]}"
+		pr_checks_summary_short="[Checks Fail: ${checks_summary[fails]} / ${checks_summary[total]}]"
 		pr_check_status='FAIL'
 		pr_checks_color="${E_CS}"
 	elif (( checks_summary[count] > 0 )); then
-	  pr_checks_summary="Passing: ${checks_summary[count]} / ${checks_summary[total]}"
+	  pr_checks_summary="Checks Passing: ${checks_summary[count]} / ${checks_summary[total]}"
+	  pr_checks_summary_short="[Checks Pass: ${checks_summary[count]} / ${checks_summary[total]}]"
 	  pr_check_status='PASS'
 	  pr_checks_color="${S_CS}"
 	elif (( checks_summary[waits] > 0 )); then
-	  pr_checks_summary="Waiting: ${checks_summary[waits]} / ${checks_summary[total]}"
+	  pr_checks_summary="Checks Waiting: ${checks_summary[waits]} / ${checks_summary[total]}"
+	  pr_checks_summary_short="[Checks Wait: ${checks_summary[waits]} / ${checks_summary[total]}]"
 	  pr_check_status='WAIT'
 	  pr_checks_color="${I_CS}"
 	fi
@@ -115,11 +120,13 @@ summarize_reviews() {
 	done
 
 	if (( review_summary[fails] > 0 )); then
-		pr_review_summary="Blockers: ${review_summary[fails]} / ${review_summary[total]}"
+		pr_review_summary="Reviews Rejected: ${review_summary[fails]} / ${review_summary[total]}"
+		pr_review_summary_short="[Reviews Fail: ${review_summary[fails]} / ${review_summary[total]}]"
 		pr_review_status='CHANGES'
 		pr_review_color="${E_CS}"
 	elif (( review_summary[count] > 0 )); then
-	  pr_review_summary="Approved: ${review_summary[count]} / ${review_summary[total]}"
+	  pr_review_summary="Reviews Approved: ${review_summary[count]} / ${review_summary[total]}"
+	  pr_review_summary_short="[Reviews Pass: ${review_summary[count]} / ${review_summary[total]}]"
 		if (( review_summary[count] > 1 )); then
 	  	pr_review_status='APPROVED'
 		  pr_review_color="${S_CS}"
@@ -127,6 +134,10 @@ summarize_reviews() {
 			pr_review_status='REVIEWING'
 			pr_review_color="${I_CS}"
 		fi
+	else
+	  pr_review_summary="Reviews Waiting: ${review_summary[count]} / ${review_summary[total]}"
+	  pr_review_summary_short="[Reviews Wait: ${review_summary[count]} / ${review_summary[total]}]"
+	  pr_review_color="${I_CS}"
 	fi
 }
 
@@ -135,6 +146,7 @@ SHOW_REVIEWS=false
 SHOW_CHECKS=false
 SHOW_ALL=true
 ONE_LINE=false
+SHORTER=false
 
 while [[ "${1}" =~ ^- ]]; do
 	if [ "${1}" = '-b' ]; then
@@ -155,6 +167,10 @@ while [[ "${1}" =~ ^- ]]; do
 
 	if [ "${1}" = '-1' ]; then
 		ONE_LINE=true
+	fi
+
+	if [ "${1}" = '-s' ]; then
+		SHORTER=true
 	fi
 
 	shift
@@ -194,19 +210,19 @@ summarize_checks
 summarize_reviews
 
 if [ "${pr_check_status}" = 'FAIL' ]; then
-	pr_state='failing'
+	pr_state='failed!'
 	state_color="${E_CS}"
 elif [ "${pr_check_status}" = 'WAIT' ]; then
 	pr_state='waiting'
 	state_color="${W_CS}"
 elif [ "${pr_review_status}" = 'CHANGES' ]; then
-	pr_state='rejected'
+	pr_state='reject!'
 	state_color="${E_CS}"
 elif [ "${pr_review_status}" = 'APPROVED' ]; then
-	pr_state='approved'
+	pr_state='approve'
 	state_color="${S_CS}"
 else
-	pr_state='in review'
+	pr_state='reviews'
 	state_color="${I_CS}"
 fi
 
@@ -240,10 +256,21 @@ if [ "${ONE_LINE}" = 'true' ]; then
 	if [ "${pr_open}" = 'draft' ]; then
 		pr_title_prefix='[draft review] ';
 	fi
+
 	if [ -t 1 ]; then
-		echo -en "${pr_user} ${pr_open} ${pr_state} " >&2
+		SHORT_LINE="${L_CS}${pr_link} ${pr_title_prefix}${pr_title}"
+		LONG_LINE="${I_CS}${pr_user} ${open_color}${pr_open} ${state_color}${pr_state} ${pr_checks_color}${pr_checks_summary_short} ${pr_review_color}${pr_review_summary_short} ${L_CS}${pr_link} ${N_CS}${pr_title_prefix}${pr_title}"
+	else
+		SHORT_LINE="${pr_link} ${pr_title_prefix}${pr_title}"
+		LONG_LINE="${pr_user} ${pr_open} ${pr_state} ${pr_checks_summary_short} ${pr_review_summary_short} ${pr_link} ${pr_title_prefix}${pr_title}"
 	fi
-	echo -e "${pr_link} ${pr_title_prefix}${pr_title}" >&1
+
+	if [ "${SHORTER}" == 'true' ]; then
+		echo -e "${SHORT_LINE}" >&1
+	else
+		echo -e "${LONG_LINE}" >&1
+	fi
+
 else
 	echo >&2
 	echo -e "${D_CS}#${pr_number} ${I_CS}${pr_user} ${K_CS}- ${open_color}${pr_open} ${state_color}${pr_state} ${K_CS}${pr_age}${N_CS}" >&2

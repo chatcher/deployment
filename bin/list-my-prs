@@ -15,7 +15,7 @@ usage() {
 	echo "  -c    Include the Pull Request checks." >&2
 	echo "  -o    Only print if the Pull Request is 'open' (not draft)." >&2
 	echo "  -1    List the Pull Request in one line." >&2
-
+	echo "  -s    Shorter summary." >&2
 	echo >&2
 
 	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
