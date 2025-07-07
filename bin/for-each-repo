@@ -1,0 +1,214 @@
+#!/usr/bin/env bash
+
+# set -e
+# set -x
+
+CACHE_DIR='/tmp/for-all-repos'
+TEAM_NAME='viper'
+INCLUDE_REGEX='/'
+EXCLUDE_REGEX='(HJ81|MPF_DB|HBK|BID|DEF|DEM|MPF|NRS|PCE|RAM|RAO|SMU|UDP|-)'
+COMMAND=''
+
+usage() {
+	echo "For all available repos, run some particular command" >&2
+	echo >&2
+	echo "usage:" >&2
+	echo "  $(basename "${0}") [options] <command> [command-args]" >&2
+	echo >&2
+	echo "options:" >&2
+	echo "  -t <team name>        look within a specific team folder - default: '${TEAM_NAME}'" >&2
+	echo "  -i <include pattern>  include repos by pattern - default: '${INCLUDE_REGEX}'" >&2
+	echo "  -x <exclude pattern>  exclude repos by pattern - default: '${EXCLUDE_REGEX}'" >&2
+	echo "  -l <name1,name2,...>  explicitly list what repos, comma-separated" >&2
+	echo "  -y                    skip prompts" >&2
+	echo "  -v                    verbose: show the post-execution log" >&2
+	echo "  -r                    reset caches before running" >&2
+	# echo "  -s                    silent, don't print progress (default: false)" >&2
+	echo "  -m <mod_rem>          modulo filter, where idx % 10 === rem" >&2
+	echo >&2
+
+	if [ -n "${1}" ]; then echo -e "${A_CS} error: ${1} ${N_CS}" >&2; fi
+
+	exit 1
+}
+
+if [[ "${1}" =~ ^-?-h(elp)?$ ]]; then usage ''; fi
+
+PROCESS_ARGS=1
+RESET_CACHE=0
+REPO_LIST=
+DO_PROMPT=1
+SHOW_LOGS=0
+SHUSH=0
+MODULUS=1
+MOD_REM=0
+COMMAND=()
+
+while (( $# > 0 )); do
+	if [ "${PROCESS_ARGS}" = '1' ]; then
+		if [ "${1}" == -t ]; then
+			TEAM_NAME="${2}"
+			shift
+		elif [ "${1}" == -i ]; then
+			INCLUDE_REGEX="${2}"
+			shift
+		elif [ "${1}" == -x ]; then
+			EXCLUDE_REGEX="${2}"
+			shift
+		elif [ "${1}" == -l ]; then
+			REPO_LIST="${2}"
+			DO_PROMPT=0
+			shift
+		elif [ "${1}" == -y ]; then
+			DO_PROMPT=0
+		elif [ "${1}" == -s ]; then
+			SHUSH=1
+		elif [ "${1}" == -r ]; then
+			RESET_CACHE=1
+		elif [ "${1}" == -v ]; then
+			SHOW_LOGS=1
+		elif [ "${1}" == -m ]; then
+			if ! [[ "${2}" =~ ^[0-9]$ ]]; then
+				usage "Modulo remainder has to be single digit."
+			fi
+			MODULUS='10'
+			MOD_REM="${2}"
+			shift
+		else
+			COMMAND+=("${1}")
+			PROCESS_ARGS=0
+		fi
+	else
+		COMMAND+=("${1}")
+	fi
+
+	shift
+done
+
+for_this_repo() {
+	REPO_PATH="${1}"
+	REPO_NAME="${REPO_PATH##*/}"
+	shift
+
+	if ! [ -d "${REPO_PATH}" ]; then
+		echo -e "${E_CS} Not a directory: ${REPO_PATH} ${N_CS}" >&2
+	elif ! [ -e "${REPO_PATH}/.git" ]; then
+		: # echo -e "${E_CS} Not a git repo: ${REPO_PATH} ${N_CS}" >&2
+	elif [ -n "${REPO_LIST}" ] && ! [[ "${REPO_LIST}" =~ "${REPO_NAME}" ]]; then
+		: # echo -e "${S_CS} Skipping ${REPO_PATH} ${N_CS}" >&2
+	else
+		# shellcheck disable=SC2164
+		cd "${REPO_PATH}"
+		[ "${SHUSH}" == 0 ] && echo >&1
+		[ "${SHUSH}" == 0 ] && echo -e "${S_CS} Starting ${REPO_NAME}... ${N_CS}" >&2
+		[ "${SHUSH}" == 0 ] && echo -e "\t> ${REPO_NAME}" >&1
+		"${@}"
+		[ "${SHUSH}" == 0 ] && echo -e "${S_CS} Finished (exit: $?) ${N_CS}" >&2
+		[ "${SHUSH}" == 0 ] && echo >&2
+	fi
+}
+
+REFERENCE="${TEAM_NAME}:${INCLUDE_REGEX}:${EXCLUDE_REGEX}:$(md5 <<< "${REPO_LIST}")"
+SEARCH_HASH="$(md5 <<< "${REFERENCE}")"
+SEARCH_FILE="${CACHE_DIR}/${SEARCH_HASH}/files"
+RESULT_HASH="$(md5 <<< "($(date +%s)) ${COMMAND[*]}")"
+RESULT_FILE="${CACHE_DIR}/${SEARCH_HASH}/${RESULT_HASH}"
+TEAM_DIR="${TEAM_NAME:+team_}${TEAM_NAME}"
+DIRECTORY="${HOME}/repo/${TEAM_DIR}"
+
+mkdir -p "${CACHE_DIR}/${SEARCH_HASH}"
+rm -f "${RESULT_FILE}"
+
+echo -e "${I_CS} REFERENCE: ${REFERENCE} ${N_CS}" >&2
+echo -e "${I_CS} SEARCH_HASH: ${SEARCH_HASH} ${N_CS}" >&2
+echo -e "${I_CS} SEARCH_FILE: ${SEARCH_FILE} ${N_CS}" >&2
+echo -e "${I_CS} RESULT_HASH: ${RESULT_HASH} ${N_CS}" >&2
+echo -e "${I_CS} RESULT_FILE: ${RESULT_FILE} ${N_CS}" >&2
+echo -e "${I_CS} DIRECTORY: ${DIRECTORY} ${N_CS}" >&2
+echo -e "${I_CS} INCLUDE PATTERN: ${INCLUDE_REGEX} ${N_CS}" >&2
+echo -e "${I_CS} EXCLUDE PATTERN: ${EXCLUDE_REGEX} ${N_CS}" >&2
+echo -e "${I_CS} REPO LIST: ${REPO_LIST} ${N_CS}" >&2
+
+if [ "${RESET_CACHE}" = 1 ]; then
+	echo -e "${S_CS} Clearing cache ${N_CS}" >&2
+	rm -f "${SEARCH_FILE}"
+	if [ -z "${COMMAND[*]}" ]; then
+		echo -e "${S_CS} Done ${N_CS}" >&2
+		exit
+	fi
+fi
+
+if [ -f "${SEARCH_FILE}" ] && (( $(date +%s) - $(stat -f '%m' "${SEARCH_FILE}") > 3600 )); then
+	echo -e "${S_CS} Clearing stale cache ${N_CS}" >&2
+	rm -f "${SEARCH_FILE}"
+fi
+
+if [ -f "${SEARCH_FILE}" ] && [ "$(wc -l < "${SEARCH_FILE}" | sed 's/ //g')" == '0' ]; then
+	echo -e "${S_CS} Clearing empty cache ${N_CS}" >&2
+	rm -f "${SEARCH_FILE}"
+fi
+
+if [ -z "${COMMAND[*]}" ]; then usage 'Should probably provide a command.'; fi
+
+if [ -e "${SEARCH_FILE}" ]; then
+	echo -e "${S_CS} Using cached search ${N_CS}" >&2
+	cat "${SEARCH_FILE}"
+elif [ -z "${REPO_LIST}" ]; then
+	echo -e "${S_CS} Gathering files... ${N_CS}" >&2
+	if [ -z "${EXCLUDE_REGEX}" ]; then
+		time find -L -Ex "${DIRECTORY}" -type d -maxdepth 1 -path "*${INCLUDE_REGEX}*" -not -name "${TEAM_DIR}"  | sort > "${SEARCH_FILE}"
+	else
+		time find -L -Ex "${DIRECTORY}" -type d -maxdepth 1 -path "*${INCLUDE_REGEX}*" -not -name "${TEAM_DIR}"  | grep -v -E -e "${EXCLUDE_REGEX}" | sort > "${SEARCH_FILE}"
+	fi
+else
+	echo -e "${S_CS} Iterating repo list... ${N_CS}" >&2
+	touch "${SEARCH_FILE}"
+	for REPO_NAME in ${REPO_LIST//,/ };do
+		echo "${HOME}/repo/${REPO_NAME}" >> "${SEARCH_FILE}"
+	done
+fi
+
+TOTAL="$(wc -l < "${SEARCH_FILE}" | sed 's/ //g')"
+
+if [ "${TOTAL}" == '0' ]; then
+	echo -e "${S_CS} No files I guess? ${N_CS}" >&2
+	echo find -L -Ex "${DIRECTORY}" -type d -maxdepth 1 \| grep -Ev -e '/\.|node_modules|coverage|'"${TEAM_DIR}$" \| grep -E -e ".*${INCLUDE_REGEX}.*$"
+	exit 1
+fi
+
+if [ "${DO_PROMPT}" == 1 ]; then
+	if [ -z "${REPO_LIST}" ]; then
+		echo -e "${S_CS} Found ${TOTAL} ${N_CS}" >&2
+	fi
+
+	echo -e "${S_CS} Found these: ${N_CS}" >&2
+	while read -u 3 -r REPO_PATH; do
+		REPO_NAME="${REPO_PATH##*/}"
+		if [ -z "${REPO_LIST}" ] || [[ "${REPO_LIST}" =~ "${REPO_NAME}" ]]; then
+			echo -e "${REPO_PATH##*/}" >&2
+		fi
+	done 3< "${SEARCH_FILE}"
+fi
+
+if [ "${DO_PROMPT}" == 0 ] || prompt 'Okay?'; then
+	touch "${RESULT_FILE}"
+	time (
+		INDEX=0
+		while read -u 3 -r REPO_PATH; do
+			INDEX="$(( INDEX + 1 ))"
+			# [ "${SHUSH}" == 0 ] &&
+			progress "${INDEX}" "${TOTAL}" "${REPO_PATH##*/}"
+			if [ "$(( INDEX % MODULUS ))" == "${MOD_REM}" ]; then
+				for_this_repo "${REPO_PATH}" "${COMMAND[@]}" | tee -a "${RESULT_FILE}"
+			fi
+		done 3< "${SEARCH_FILE}"
+	)
+	if [ "${SHOW_LOGS}" == '1' ]; then
+		open -a 'Sublime Text' "${RESULT_FILE}" &
+		# sleep 1
+	fi
+	(sleep 1; rm "${RESULT_FILE}") &
+fi
+
+echo >&2
+echo -e "${S_CS} Done ${N_CS}" >&2
